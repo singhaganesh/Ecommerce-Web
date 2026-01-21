@@ -1,0 +1,10 @@
+
+
+# ----------------------
+# Images folder
+# ----------------------
+images/
+
+# OS files
+.DS_Store
+Thumbs.db

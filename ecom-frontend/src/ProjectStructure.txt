@@ -1,0 +1,33 @@
+
+src/
+│
+├── app/
+│   └── store.js
+│
+├── api/
+│   └── api.js
+│
+├── features/
+│   ├── category/
+│   │   ├── categorySlice.js
+│   │   └── categoryService.js
+│   │
+│   ├── product/
+│   │   ├── productSlice.js
+│   │   └── productService.js
+│   │
+│   └── cart/
+│       └── cartSlice.js
+│
+├── components/
+│   ├── Navbar.jsx
+│   ├── Footer.jsx
+│   └── Loader.jsx
+│
+├── pages/
+│   ├── Home.jsx
+│   ├── ProductList.jsx
+│   └── ProductDetails.jsx
+│
+├── main.jsx
+└── App.jsx
