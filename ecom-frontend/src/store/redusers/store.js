@@ -5,7 +5,7 @@ import { categoryReducer } from "./CategoryReducer";
 export const store = configureStore({
   reducer: {
     products: productReducer,
-    categories: categoryReducer,
+    category: categoryReducer,
   },
 });
 

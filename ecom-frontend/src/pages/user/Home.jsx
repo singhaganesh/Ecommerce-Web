@@ -2,16 +2,16 @@ import { Container } from "@mui/material";
 import { useEffect, useRef } from "react";
 import { FaShoppingCart } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCategories, fetchProducts } from "../store/actions";
-import ProductCart from "../components/ProductCard";
-import CategoryCard from "../components/CategoryCard";
+import { fetchCategories, fetchFilteredProducts, fetchProducts } from "../../store/actions";
+import ProductCart from "../../components/ProductCard";
+import CategoryCard from "../../components/CategoryCard";
 import { HiChevronLeft, HiChevronRight } from "react-icons/hi";
 import { Link } from "react-router-dom";
 
 
 export default function Home() {
-    const { products } = useSelector((state) => state.products);
-    const { categories } = useSelector((state) => state.categories);
+    const { featuredProduct, bestSellerProduct } = useSelector((state) => state.products);
+    const { categories } = useSelector((state) => state.category);
 
     const sliderRef = useRef(null);
 
@@ -20,7 +20,8 @@ export default function Home() {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(fetchProducts());
+        dispatch(fetchFilteredProducts("featured=true", "featuredProduct"));
+        dispatch(fetchFilteredProducts("bestSeller=true", "bestSellerProduct"));
         dispatch(fetchCategories());
     }, [dispatch]);
     return (
@@ -51,18 +52,23 @@ export default function Home() {
             </div>
 
 
+            
+
+
             {/* Categories Section */}
             <div className="min-h-40 mt-10">
                 <div className="flex justify-center items-center mb-2 px-12">
                     <h2 className="text-3xl font-bold">Shop by Category</h2>
-                    
+                    See
                 </div>
                 <p className="text-gray-500 text-center">
                     Explore our curated collections
                 </p>
-                <Link to="/categories" className="text-indigo-600 hover:text-indigo-800 font-semibold justify-end flex mb-4 mr-12">
+                <div className="justify-end flex mb-4 mr-12">
+                    <Link to="/categories" className="text-indigo-600 hover:text-indigo-800 font-semibold">
                         See All
                     </Link>
+                </div>
 
                 {/* Slider Container */}
                 
@@ -89,8 +95,8 @@ export default function Home() {
                 <h2 className="text-3xl font-bold text-center mb-2">Featured Products</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
 
-                    {products &&
-                        products
+                    {featuredProduct &&
+                        featuredProduct
                             .filter((item) => Number(item.quantity) > 0)
                             .map((item, i) => <ProductCart key={i} {...item} pageFrom="HOME" />
 

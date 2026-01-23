@@ -23,4 +23,8 @@ public interface CategoryService {
     CategoryDTO updateCategoryImage(Long categoryId, MultipartFile image) throws IOException;
 
     List<CategoryDTO> saveAllCategories(List<CategoryDTO> categories);
+
+    List<CategoryDTO> getParentCategories();
+
+    List<CategoryDTO> getChildrenCategories(Long categoryId);
 }

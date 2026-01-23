@@ -1,6 +1,7 @@
 package com.ecommerce.project.controller;
 
 import com.ecommerce.project.config.AppConstants;
+import com.ecommerce.project.model.Category;
 import com.ecommerce.project.payload.CategoryDTO;
 import com.ecommerce.project.payload.CategoryResponse;
 import com.ecommerce.project.service.CategoryService;
@@ -24,16 +25,31 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
-    @GetMapping("/public/categories")
-    public ResponseEntity<CategoryResponse> getAllCategories(
-            @RequestParam(name = "pageNumber",defaultValue = AppConstants.PAGE_NUMBER,required = false) Integer pageNumber,
-            @RequestParam(name = "pageSize",defaultValue = AppConstants.PAGE_SIZE,required = false) Integer pageSize,
-            @RequestParam(name = "sortBy",defaultValue = AppConstants.SORT_CATEGORIES_BY,required = false) String sortBy,
-            @RequestParam(name = "sortOrder",defaultValue = AppConstants.SORT_DIR,required = false) String sortOrder){
+//    @GetMapping("/public/categories")
+//    public ResponseEntity<CategoryResponse> getAllCategories(
+//            @RequestParam(name = "pageNumber",defaultValue = AppConstants.PAGE_NUMBER,required = false) Integer pageNumber,
+//            @RequestParam(name = "pageSize",defaultValue = AppConstants.PAGE_SIZE,required = false) Integer pageSize,
+//            @RequestParam(name = "sortBy",defaultValue = AppConstants.SORT_CATEGORIES_BY,required = false) String sortBy,
+//            @RequestParam(name = "sortOrder",defaultValue = AppConstants.SORT_DIR,required = false) String sortOrder){
+//
+//        CategoryResponse categoryResponse = categoryService.getAllCategories(pageNumber,pageSize,sortBy,sortOrder);
+//        return new ResponseEntity<>(categoryResponse,HttpStatus.OK);
+//    }
 
-        CategoryResponse categoryResponse = categoryService.getAllCategories(pageNumber,pageSize,sortBy,sortOrder);
-        return new ResponseEntity<>(categoryResponse,HttpStatus.OK);
+    // get all main categories
+    @GetMapping("public/categories/main")
+    public ResponseEntity<List<CategoryDTO>> getMainCategories() {
+        List<CategoryDTO> categories = categoryService.getParentCategories();
+        return ResponseEntity.ok(categories);
     }
+
+    // Get children of any category (sub or micro)
+    @GetMapping("public/categories/{categoryId}/children")
+    public ResponseEntity<List<CategoryDTO>> getChildren(@PathVariable Long categoryId) {
+        List<CategoryDTO> children = categoryService.getChildrenCategories(categoryId);
+        return ResponseEntity.ok(children);
+    }
+
 
     @PostMapping("/admin/categories/bulk")
     public ResponseEntity<List<CategoryDTO>> saveAllCategories(

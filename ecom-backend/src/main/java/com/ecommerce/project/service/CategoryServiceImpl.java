@@ -76,6 +76,37 @@ public class CategoryServiceImpl implements CategoryService{
     }
 
     @Override
+    public List<CategoryDTO> getParentCategories() {
+        List<Category> categories = categoryRepository.findByParentIsNull();
+
+        List<CategoryDTO> categoryDTOS = categories.stream()
+                .map(category -> {
+                    CategoryDTO categoryDTO = modelMapper.map(category, CategoryDTO.class);
+                    categoryDTO.setImage(imageUtils.constructImageUrl(category.getImage()));
+                    return categoryDTO;
+                })
+                .toList();
+
+        return categoryDTOS;
+    }
+
+    @Override
+    public List<CategoryDTO> getChildrenCategories(Long categoryId) {
+        List<Category> categories = categoryRepository.findByParentCategoryId(categoryId);
+
+        List<CategoryDTO> categoryDTOS = categories.stream()
+                .map(category -> {
+                    CategoryDTO categoryDTO = modelMapper.map(category, CategoryDTO.class);
+                    categoryDTO.setImage(imageUtils.constructImageUrl(category.getImage()));
+                    return categoryDTO;
+                })
+                .toList();
+        return categoryDTOS;
+    }
+
+
+
+    @Override
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         Category category = modelMapper.map(categoryDTO,Category.class);
         Category categoryFromDB = categoryRepository.findByCategoryNameIgnoreCase(category.getCategoryName());
@@ -125,7 +156,7 @@ public class CategoryServiceImpl implements CategoryService{
 
     }
 
-
+    
     @Override
     public List<CategoryDTO> saveAllCategories(List<CategoryDTO> categoryDTOList) {
 

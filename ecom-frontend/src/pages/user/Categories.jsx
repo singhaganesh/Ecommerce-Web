@@ -1,8 +1,8 @@
 import { Container } from "@mui/material";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchCategories } from "../store/actions";
-import CategoryCard from "../components/CategoryCard";
+import { fetchCategories } from "../../store/actions";
+import CategoryCard from "../../components/CategoryCard";
 
 export default function Categories() {
     const { categories } = useSelector((state) => state.categories);
