@@ -31,7 +31,6 @@ public class Product {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-
     private List<ProductImage> images;
     private String brand;                // Apple, Samsung, Nike etc
 

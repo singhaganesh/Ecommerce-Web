@@ -21,6 +21,8 @@ public class ProductDTO {
     @NotBlank(message = "Product name must not be empty")
     private String productName;
 
+    private String categoryName;
+
     private List<String> images;
     private String primaryImage;
     private String brand;
@@ -45,6 +47,7 @@ public class ProductDTO {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
 
     // 🔹 Required for category mapping (MICRO category only)
 //    private Long categoryId;

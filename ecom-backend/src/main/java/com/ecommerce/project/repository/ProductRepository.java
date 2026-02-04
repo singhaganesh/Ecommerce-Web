@@ -46,4 +46,6 @@ public interface ProductRepository extends JpaRepository<Product,Long> {
     boolean existsBySku(String sku);
 
     boolean existsByProductNameIgnoreCaseAndCategoryCategoryId(@NotBlank(message = "Product name must not be empty") String productName, Long categoryId);
+
+    Page<Product> findByUser_UserId(Long sellerId, Pageable pageDetails);
 }

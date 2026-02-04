@@ -21,7 +21,9 @@ public class ProductImage {
     private Integer position;       // display order
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @JoinColumn(name = "product_id", nullable = false)
+    @ToString.Exclude
     private Product product;
+
 }
 

@@ -62,42 +62,6 @@ public class ProductServiceImpl implements ProductService{
         this.productImageRepository = productImageRepository;
     }
 
-    @Override
-    public ProductDTO addProduct(ProductDTO productDTO, Long categoryId) {
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Category","categoryId",categoryId));
-        boolean isProductNotPresent = true;
-
-        List<Product> products = category.getProducts();
-        for (Product value : products) {
-            if (value.getProductName().equalsIgnoreCase(productDTO.getProductName())) {
-                isProductNotPresent = false;
-                break;
-            }
-        }
-        if (isProductNotPresent) {
-
-            Product product = modelMapper.map(productDTO, Product.class);
-            product.setProductId(null);   // force INSERT
-
-//            product.setImage("default.png");
-            product.setCategory(category);
-            double specialPrice = product.getPrice() -
-                    ((product.getDiscount() * 0.01) * product.getPrice());
-            product.setSpecialPrice(specialPrice);
-            product.setRating(0.0);
-            product.setTotalReviews(0);
-            product.setActive(true);
-            product.setSoldCount(0);
-            product.setCreatedAt(LocalDateTime.now());
-            product.setUpdatedAt(LocalDateTime.now());
-            Product savedProduct = productRepository.save(product);
-            return modelMapper.map(savedProduct, ProductDTO.class);
-        }else {
-            throw new APIException("Product with the name "+productDTO.getProductName()+" already exist!");
-        }
-    }
 
     @Override
     @Transactional  // Add this to ensure the entire operation (including cascaded saves) is transactional
@@ -107,6 +71,8 @@ public class ProductServiceImpl implements ProductService{
             Long sellerId,
             List<MultipartFile> images
     ) throws IOException {
+
+        System.out.println("Product DTO received: " + productDTO);  // Add logging for debugging
 
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User","userId",sellerId));
@@ -181,6 +147,69 @@ public class ProductServiceImpl implements ProductService{
                         .findFirst()
                         .orElse(null)
         );
+
+        return response;
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getProductsBySeller(
+            Long sellerId,
+            Integer pageNumber,
+            Integer pageSize,
+            String sortBy,
+            String sortOrder
+    ) {
+
+        Sort sort = sortOrder.equalsIgnoreCase("asc")
+                ? Sort.by(sortBy).ascending()
+                : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+
+        Page<Product> pageProduct =
+                productRepository.findByUser_UserId(sellerId, pageable);
+
+        List<ProductDTO> productDTOS = pageProduct.getContent().stream()
+                .map(product -> {
+
+                    ProductDTO dto = modelMapper.map(product, ProductDTO.class);
+
+                    // 🔥 Fetch images
+                    List<ProductImage> images = product.getImages();
+
+                    if (images != null && !images.isEmpty()) {
+
+                        // All images
+                        dto.setImages(
+                                images.stream()
+                                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                        .toList()
+                        );
+
+                        // Primary image
+                        dto.setPrimaryImage(
+                                images.stream()
+                                        .filter(ProductImage::isPrimaryImage)
+                                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                        .findFirst()
+                                        .orElse(null)
+                        );
+                    } else {
+                        dto.setImages(List.of());
+                        dto.setPrimaryImage(null);
+                    }
+
+                    return dto;
+                })
+                .toList();
+
+        ProductResponse response = new ProductResponse();
+        response.setContent(productDTOS);
+        response.setPageNumber(pageProduct.getNumber());
+        response.setPageSize(pageProduct.getSize());
+        response.setTotalElements(pageProduct.getTotalElements());
+        response.setTotalPages(pageProduct.getTotalPages());
+        response.setLastPage(pageProduct.isLast());
 
         return response;
     }

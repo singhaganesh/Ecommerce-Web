@@ -9,7 +9,6 @@ import java.util.List;
 
 public interface ProductService {
 
-    ProductDTO addProduct(ProductDTO productDTO, Long categoryId);
 
     ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
@@ -26,4 +25,6 @@ public interface ProductService {
     ProductResponse getFilterProduct(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String category, Integer rating, Double minPrice, Double maxPrice, Boolean featured, Boolean bestSeller);
 
     ProductDTO createProduct(ProductDTO productDTO, Long categoryId, Long sellerId, List<MultipartFile> images) throws IOException;
+
+    ProductResponse getProductsBySeller(Long sellerId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 }
