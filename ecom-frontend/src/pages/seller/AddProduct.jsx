@@ -1,7 +1,8 @@
 // CreateProductForm.jsx
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMainCategories, fetchChildrenCategories, createProduct } from "../../store/actions";
+import { fetchMainCategories, fetchChildrenCategories } from "../../store/actions/categoryActions";
+import { createProduct } from "../../store/actions/productActions";
 
 export default function AddProduct({ onClose }) {
 
@@ -90,6 +91,7 @@ export default function AddProduct({ onClose }) {
             price: Number(price),
             discount: Number(discount),
             quantity: Number(quantity),  // Add quantity to match ProductDTO/Product model
+            specialPrice: Number(specialPrice.toFixed(2)),
         };
 
         dispatch(

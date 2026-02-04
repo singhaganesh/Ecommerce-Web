@@ -59,7 +59,6 @@ export default function Home() {
             <div className="min-h-40 mt-10">
                 <div className="flex justify-center items-center mb-2 px-12">
                     <h2 className="text-3xl font-bold">Shop by Category</h2>
-                    See
                 </div>
                 <p className="text-gray-500 text-center">
                     Explore our curated collections

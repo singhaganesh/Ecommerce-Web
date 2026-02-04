@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FaClipboardList,
   FaExclamationCircle,
   FaExclamationTriangle,
   FaEdit,
-  FaTrash
+  FaTrash,
+  FaSortUp,
+  FaSortDown
 } from "react-icons/fa";
 import AddProduct from "./AddProduct";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSellerProducts } from "../../store/actions/productActions";
 
 /* ---------- Static Stats ---------- */
 const stats = {
@@ -18,92 +22,46 @@ const stats = {
   lowStockChange: "Requires attention",
 };
 
-/* ---------- Static Products ---------- */
-const products = [
-  {
-    id: 1,
-    name: "Apple Watch Series 9",
-    sku: "AW-001",
-    category: "Smart Watches",
-    price: 399.99,
-    stock: 25,
-    status: "Active",
-    image: "https://images.unsplash.com/photo-1517433456452-f9633a875f6f"
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy Watch 6",
-    sku: "SGW-002",
-    category: "Smart Watches",
-    price: 299.99,
-    stock: 18,
-    status: "Active",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30"
-  },
-  {
-    id: 3,
-    name: "Noise ColorFit Pro 4",
-    sku: "NCF-003",
-    category: "Smart Watches",
-    price: 89.99,
-    stock: 5,
-    status: "Low Stock",
-    image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1"
-  },
-  {
-    id: 4,
-    name: "Boat Xtend Smart Watch",
-    sku: "BXT-004",
-    category: "Smart Watches",
-    price: 59.99,
-    stock: 0,
-    status: "Out of Stock",
-    image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d"
-  },
-    {
-    id: 1,
-    name: "Apple Watch Series 9",
-    sku: "AW-001",
-    category: "Smart Watches",
-    price: 399.99,
-    stock: 25,
-    status: "Active",
-    image: "https://images.unsplash.com/photo-1517433456452-f9633a875f6f"
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy Watch 6",
-    sku: "SGW-002",
-    category: "Smart Watches",
-    price: 299.99,
-    stock: 18,
-    status: "Active",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30"
-  },
-  {
-    id: 3,
-    name: "Noise ColorFit Pro 4",
-    sku: "NCF-003",
-    category: "Smart Watches",
-    price: 89.99,
-    stock: 5,
-    status: "Low Stock",
-    image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1"
-  },
-  {
-    id: 4,
-    name: "Boat Xtend Smart Watch",
-    sku: "BXT-004",
-    category: "Smart Watches",
-    price: 59.99,
-    stock: 0,
-    status: "Out of Stock",
-    image: "https://images.unsplash.com/photo-1524805444758-089113d48a6d"
-  }
-];
 
 const Inventory = () => {
+  const dispatch = useDispatch();
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [sortBy, setSortBy] = useState("productId");
+  const [sortOrder, setSortOrder] = useState("asc");
+  const pageSize = 5; // Matches backend default
+
+  const { products, loading, pagination } = useSelector(
+    (state) => state.products
+  );
+
+  const sellerId = 2; // 🔥 later replace with logged-in seller id
+
+  useEffect(() => {
+    dispatch(fetchSellerProducts(sellerId, currentPage, pageSize, sortBy, sortOrder));
+  }, [dispatch, sellerId, currentPage, sortBy, sortOrder]);
+
+  const handlePrevious = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (pagination && currentPage < pagination.totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handleSort = (newSortBy) => {
+    if (sortBy === newSortBy) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(newSortBy);
+      setSortOrder("asc");
+    }
+    setCurrentPage(0); // Reset to first page on sort change
+  };
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
@@ -111,7 +69,7 @@ const Inventory = () => {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
-        <button 
+        <button
           className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-blue-700 cursor-pointer"
           onClick={() => setShowAddProduct(true)}
         >
@@ -156,74 +114,150 @@ const Inventory = () => {
         </div>
       </div>
 
+      {/* Sorting Dropdown */}
+      <div className="mb-4 flex gap-4">
+        <select
+          value={sortBy}
+          onChange={(e) => handleSort(e.target.value)}
+          className="px-3 py-2 border rounded"
+        >
+          <option value="productId">Sort by ID</option>
+          <option value="productName">Sort by Name</option>
+          <option value="specialPrice">Sort by Price</option>
+          <option value="quantity">Sort by Stock</option>
+        </select>
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value)}
+          className="px-3 py-2 border rounded"
+        >
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </div>
+
       {/* Table */}
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-gray-50">
             <tr>
-              <th className="p-4">PRODUCT</th>
+              <th className="p-4 cursor-pointer" onClick={() => handleSort("productName")}>
+                PRODUCT {sortBy === "productName" && (sortOrder === "asc" ? <FaSortUp /> : <FaSortDown />)}
+              </th>
               <th className="p-4">CATEGORY</th>
-              <th className="p-4">PRICE</th>
-              <th className="p-4">STOCK</th>
+              <th className="p-4 cursor-pointer" onClick={() => handleSort("specialPrice")}>
+                PRICE {sortBy === "specialPrice" && (sortOrder === "asc" ? <FaSortUp /> : <FaSortDown />)}
+              </th>
+              <th className="p-4 cursor-pointer" onClick={() => handleSort("quantity")}>
+                STOCK {sortBy === "quantity" && (sortOrder === "asc" ? <FaSortUp /> : <FaSortDown />)}
+              </th>
               <th className="p-4">STATUS</th>
               <th className="p-4">ACTIONS</th>
             </tr>
           </thead>
 
           <tbody>
-            {products.map((product) => (
-              <tr key={product.id} className="border-t hover:bg-gray-50">
-                <td className="p-4 flex items-center gap-3">
-                  <img src={product.image} className="w-12 h-12 rounded object-cover" />
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-sm text-gray-500">SKU: {product.sku}</p>
-                  </div>
-                </td>
-
-                <td className="p-4">{product.category}</td>
-                <td className="p-4">${product.price}</td>
-                <td className="p-4">{product.stock}</td>
-
-                <td className="p-4">
-                  <span className={`font-medium ${
-                    product.status === "Active" ? "text-green-600" :
-                    product.status === "Low Stock" ? "text-yellow-600" :
-                    "text-red-600"
-                  }`}>
-                    ● {product.status}
-                  </span>
-                </td>
-
-                <td className="p-4 flex gap-3">
-                  <button className="text-blue-600 hover:text-blue-800">
-                    <FaEdit />
-                  </button>
-                  <button className="text-red-600 hover:text-red-800">
-                    <FaTrash />
-                  </button>
+            {loading ? (
+              <tr>
+                <td colSpan="6" className="p-6 text-center">
+                  Loading products...
                 </td>
               </tr>
-            ))}
+            ) : products.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="p-6 text-center text-gray-500">
+                  No products found
+                </td>
+              </tr>
+            ) : (
+              products.map((product) => (
+                <tr key={product.productId} className="border-t hover:bg-gray-50">
+
+                  {/* PRODUCT */}
+                  <td className="p-4 flex items-center gap-3">
+                    <img
+                      src={product.primaryImage || "/placeholder.png"}
+                      className="w-12 h-12 rounded object-cover"
+                      alt={product.productName}
+                    />
+                    <div>
+                      <p className="font-medium">{product.productName}</p>
+                      <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                    </div>
+                  </td>
+
+                  {/* CATEGORY */}
+                  <td className="p-4">{product.categoryName || "—"}</td>
+
+                  {/* PRICE */}
+                  <td className="p-4">₹ {product.specialPrice}</td>
+
+                  {/* STOCK */}
+                  <td className="p-4">{product.quantity}</td>
+
+                  {/* STATUS */}
+                  <td className="p-4">
+                    <span className={`font-medium ${product.quantity === 0
+                      ? "text-red-600"
+                      : product.quantity < 10
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                      }`}>
+                      ● {product.quantity === 0
+                        ? "Out of Stock"
+                        : product.quantity < 10
+                          ? "Low Stock"
+                          : "Active"}
+                    </span>
+                  </td>
+
+                  {/* ACTIONS */}
+                  <td className="p-4 flex gap-3">
+                    <button className="text-blue-600 hover:text-blue-800">
+                      <FaEdit />
+                    </button>
+                    <button className="text-red-600 hover:text-red-800">
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
+
         </table>
 
         {/* Pagination */}
         <div className="p-4 border-t flex justify-between items-center text-sm text-gray-600">
-          <p>Showing 1-{products.length} of {stats.total} products</p>
+          <p>
+            Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, pagination?.totalElements || 0)} of {pagination?.totalElements || 0} products
+          </p>
+
           <div className="flex gap-2">
-            <button className="px-3 py-1 border rounded hover:bg-gray-100">Previous</button>
-            <button className="px-3 py-1 border rounded hover:bg-gray-100">Next</button>
+            <button 
+              className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" 
+              onClick={handlePrevious} 
+              disabled={currentPage === 0}
+            >
+              Previous
+            </button>
+            <button 
+              className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" 
+              onClick={handleNext} 
+              disabled={!pagination || currentPage >= pagination.totalPages - 1}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
 
       {showAddProduct && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-50 transition-all duration-300"
           onClick={() => setShowAddProduct(false)}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out transform scale-95 animate-in fade-in"
             onClick={(e) => e.stopPropagation()}
           >
