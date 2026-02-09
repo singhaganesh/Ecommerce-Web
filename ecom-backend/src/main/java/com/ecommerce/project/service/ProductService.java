@@ -18,7 +18,7 @@ public interface ProductService {
 
     ProductDTO updateProduct(ProductDTO product, Long productId);
 
-    ProductDTO daleteProduct(Long productId);
+    void deleteProduct(Long productId);
 
     ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException;
 
@@ -27,4 +27,8 @@ public interface ProductService {
     ProductDTO createProduct(ProductDTO productDTO, Long categoryId, Long sellerId, List<MultipartFile> images) throws IOException;
 
     ProductResponse getProductsBySeller(Long sellerId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
+
+    java.util.Map<String, Object> getSellerProductStatistics(Long sellerId);
+
+    ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO, List<MultipartFile> newImages, List<String> existingImages) throws IOException;
 }

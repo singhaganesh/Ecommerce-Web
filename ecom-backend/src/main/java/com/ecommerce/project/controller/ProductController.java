@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -118,14 +119,47 @@ public class ProductController {
     }
 
     @DeleteMapping("/admin/products/{productId}")
-    public ResponseEntity<ProductDTO> deleteProduct(@PathVariable Long productId){
-        ProductDTO deleteProductDTO = productService.daleteProduct(productId);
-        return new ResponseEntity<>(deleteProductDTO,HttpStatus.OK);
+    public ResponseEntity<String> deleteAdminProduct(@PathVariable Long productId){
+        productService.deleteProduct(productId);
+        return new ResponseEntity<>("Product deleted successfully", HttpStatus.OK);
     }
     @PutMapping("admin/products/{productId}/image")
     public ResponseEntity<ProductDTO> updateProductImage(@PathVariable Long productId,
                                                          @RequestParam("image")MultipartFile image) throws IOException {
         ProductDTO updatedProduct = productService.updateProductImage(productId,image);
         return new ResponseEntity<>(updatedProduct,HttpStatus.OK);
+    }
+
+    @GetMapping("/seller/{sellerId}/products/stats")
+    public ResponseEntity<java.util.Map<String, Object>> getSellerProductStats(@PathVariable Long sellerId){
+        java.util.Map<String, Object> stats = productService.getSellerProductStatistics(sellerId);
+        return new ResponseEntity<>(stats, HttpStatus.OK);
+    }
+
+    @PutMapping(
+            value = "/seller/products/{productId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ProductDTO> updateSellerProduct(
+            @PathVariable Long productId,
+            @RequestPart("product") @Valid ProductDTO productDTO,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
+            @RequestPart(value = "existingImages", required = false) String existingImagesJson
+    ) throws IOException {
+
+        System.out.println("Received update for product ID: " + productId);
+        
+        List<String> existingImages = existingImagesJson != null 
+            ? new com.fasterxml.jackson.databind.ObjectMapper().readValue(existingImagesJson, java.util.List.class)
+            : new ArrayList<>();
+
+        ProductDTO updatedProduct = productService.updateSellerProduct(productId, productDTO, images, existingImages);
+        return ResponseEntity.ok(updatedProduct);
+    }
+
+    @DeleteMapping("/seller/products/{productId}")
+    public ResponseEntity<String> deleteSellerProduct(@PathVariable Long productId) {
+        productService.deleteProduct(productId);
+        return ResponseEntity.ok("Product deleted successfully");
     }
 }

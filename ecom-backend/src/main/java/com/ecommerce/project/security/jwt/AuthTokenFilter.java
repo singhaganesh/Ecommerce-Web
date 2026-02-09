@@ -39,9 +39,10 @@ public class AuthTokenFilter extends OncePerRequestFilter {
 
         System.out.println("AuthTokenFilter called for URI: " + path);
 
-        // ✅ Skip JWT validation for public and auth APIs
+        // ✅ Skip JWT validation for public, auth, and seller APIs
         if (path.startsWith("/api/public/") ||
                 path.startsWith("/api/auth/") ||
+                path.startsWith("/api/seller/") ||
                 path.startsWith("/swagger-ui") ||
                 path.startsWith("/v3/api-docs") ||
                 path.startsWith("/images")) {

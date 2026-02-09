@@ -12,13 +12,23 @@ public class SkuGeneratorService {
         this.productRepository = productRepository;
     }
 
+
+    private String safePrefix(String value, int length) {
+        if (value == null || value.isBlank()) {
+            return "XX"; // fallback
+        }
+
+        String cleaned = value.replaceAll("\\s+", "").toUpperCase();
+        return cleaned.substring(0, Math.min(length, cleaned.length()));
+    }
+
     public String generateSku(String categoryName, String brand, String productName) {
 
-        String cat = categoryName.replaceAll("\\s+", "").substring(0, 2).toUpperCase();
-        String br = brand.replaceAll("\\s+", "").substring(0, 3).toUpperCase();
-        String prod = productName.replaceAll("\\s+", "").substring(0, 4).toUpperCase();
+        String cat = safePrefix(categoryName, 2);
+        String br  = safePrefix(brand, 3);
+        String prod = safePrefix(productName, 4);
 
-        String random = String.valueOf((int)(Math.random() * 9000) + 1000);
+        String random = String.valueOf((int) (Math.random() * 9000) + 1000);
 
         return cat + "-" + br + "-" + prod + "-" + random;
     }
@@ -26,13 +36,12 @@ public class SkuGeneratorService {
     public String generateUniqueSku(String categoryName, String brand, String productName) {
 
         String sku;
-
         do {
             sku = generateSku(categoryName, brand, productName);
         } while (productRepository.existsBySku(sku));
 
         return sku;
     }
-
 }
+
 

@@ -21,7 +21,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -372,21 +374,6 @@ public class ProductServiceImpl implements ProductService{
     }
 
     @Override
-    public ProductDTO daleteProduct(Long productId) {
-        // Get the existing product form DB
-        Product productFormBD = productRepository.findById(productId)
-                .orElseThrow(() -> new ResourceNotFoundException("Product","productId",productId));
-
-        // Delete product from cart
-        List<Cart> carts = cartRepository.findCartsByProductId(productId);
-        carts.forEach(cart -> cartService.deleteProductFromCart(cart.getCartId(),productId));
-
-        productRepository.delete(productFormBD);
-
-        return modelMapper.map(productFormBD, ProductDTO.class);
-    }
-
-    @Override
     public ProductDTO updateProductImage(Long productId, MultipartFile image) throws IOException {
         // Get the product form DB
         Product productFormDB = productRepository.findById(productId)
@@ -402,6 +389,140 @@ public class ProductServiceImpl implements ProductService{
         // return DTO after mapping product to DTO
 
         return modelMapper.map(updatedProduct,ProductDTO.class);
+    }
+
+    @Override
+    public Map<String, Object> getSellerProductStatistics(Long sellerId) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Total products
+        long totalProducts = productRepository.countByUser_UserId(sellerId);
+        stats.put("totalProducts", totalProducts);
+        
+        // Out of stock (quantity = 0)
+        long outOfStock = productRepository.countByUser_UserIdAndQuantity(sellerId, 0);
+        stats.put("outOfStock", outOfStock);
+        
+        // Low stock (quantity > 0 AND quantity < 10)
+        long lowStock = productRepository.countLowStockBySellerId(sellerId, 10);
+        stats.put("lowStock", lowStock);
+        
+        return stats;
+    }
+
+    @Override
+    @Transactional
+    public ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO, 
+                                          List<MultipartFile> newImages, List<String> existingImages) throws IOException {
+        System.out.println("=== UPDATE PRODUCT DEBUG ===");
+        System.out.println("ProductId: " + productId);
+        System.out.println("ProductDTO: " + productDTO);
+        System.out.println("New images count: " + (newImages != null ? newImages.size() : 0));
+        System.out.println("Existing images: " + existingImages);
+        
+        // Find the product
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        
+        System.out.println("Found product: " + product.getProductName());
+        System.out.println("Current images count: " + product.getImages().size());
+        
+        // Update editable fields
+        product.setDescription(productDTO.getDescription());
+        product.setPrice(productDTO.getPrice());
+        product.setDiscount(productDTO.getDiscount());
+        product.setSpecialPrice(productDTO.getSpecialPrice());
+        product.setQuantity(productDTO.getQuantity());
+        product.setUpdatedAt(LocalDateTime.now());
+        
+        System.out.println("Updated fields - Price: " + productDTO.getPrice() + ", Qty: " + productDTO.getQuantity());
+        
+        // Handle images
+        List<ProductImage> currentImages = new ArrayList<>(product.getImages());
+        
+        // Extract just filenames from full URLs in existingImages
+        List<String> existingImageFileNames = existingImages.stream()
+                .map(url -> {
+                    // Extract filename from full URL (e.g., http://localhost:8080/images/abc.jpg -> abc.jpg)
+                    int lastSlash = url.lastIndexOf('/');
+                    return lastSlash >= 0 ? url.substring(lastSlash + 1) : url;
+                })
+                .collect(Collectors.toList());
+        
+        System.out.println("Extracted filenames to keep: " + existingImageFileNames);
+        
+        // Remove images that are not in existingImages list
+        List<ProductImage> imagesToRemove = currentImages.stream()
+                .filter(img -> !existingImageFileNames.contains(img.getImageUrl()))
+                .collect(Collectors.toList());
+        
+        for (ProductImage img : imagesToRemove) {
+            product.getImages().remove(img);
+            productImageRepository.delete(img);
+            // Optionally delete file from disk
+            // fileService.deleteImage(path, img.getImageUrl());
+        }
+        
+        // Add new images
+        if (newImages != null && !newImages.isEmpty()) {
+            int startPosition = product.getImages().size() + 1;
+            for (int i = 0; i < newImages.size(); i++) {
+                MultipartFile file = newImages.get(i);
+                String fileName = fileService.uploadImage(path, file);
+                
+                ProductImage image = new ProductImage();
+                image.setImageUrl(fileName);
+                image.setPrimaryImage(startPosition + i == 1 && product.getImages().isEmpty()); // Primary if first image
+                image.setPosition(startPosition + i);
+                image.setProduct(product);
+                
+                product.getImages().add(image);
+            }
+        }
+        
+        // If no primary image exists, set the first one as primary
+        boolean hasPrimary = product.getImages().stream().anyMatch(ProductImage::isPrimaryImage);
+        if (!hasPrimary && !product.getImages().isEmpty()) {
+            product.getImages().get(0).setPrimaryImage(true);
+        }
+        
+        Product updatedProduct = productRepository.save(product);
+        
+        // Map to DTO
+        ProductDTO response = modelMapper.map(updatedProduct, ProductDTO.class);
+        response.setImages(
+                updatedProduct.getImages().stream()
+                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                        .collect(Collectors.toList())
+        );
+        
+        response.setPrimaryImage(
+                updatedProduct.getImages().stream()
+                        .filter(ProductImage::isPrimaryImage)
+                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                        .findFirst()
+                        .orElse(null)
+        );
+        
+        return response;
+    }
+
+    @Override
+    @Transactional
+    public void deleteProduct(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
+        
+        // Delete all associated images first
+        List<ProductImage> images = product.getImages();
+        for (ProductImage image : images) {
+            productImageRepository.delete(image);
+            // Optionally delete the image file from disk
+            // fileService.deleteImage(path, image.getImageUrl());
+        }
+        
+        // Delete the product
+        productRepository.delete(product);
     }
 
 

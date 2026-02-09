@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMainCategories, fetchChildrenCategories } from "../../store/actions/categoryActions";
-import { createProduct } from "../../store/actions/productActions";
+import { createProduct, updateProduct } from "../../store/actions/productActions";
 
-export default function AddProduct({ onClose }) {
+export default function AddProduct({ onClose, isEditMode = false, product = null }) {
 
     const dispatch = useDispatch();
     const { mainCategories, subCategories, microCategories } = useSelector(state => state.category);
@@ -22,14 +22,30 @@ export default function AddProduct({ onClose }) {
     const [quantity, setQuantity] = useState("");
 
     const [images, setImages] = useState([]);
+    const [existingImages, setExistingImages] = useState([]);
+    const [removedExistingImages, setRemovedExistingImages] = useState([]);
 
     const specialPrice = price - (price * discount) / 100;
 
-
-    /* Load main categories */
+    /* Load main categories and pre-fill data in edit mode */
     useEffect(() => {
         dispatch(fetchMainCategories());
-    }, [dispatch]);
+        
+        if (isEditMode && product) {
+            // Pre-fill editable fields
+            setProductName(product.productName || "");
+            setBrand(product.brand || "");
+            setDescription(product.description || "");
+            setPrice(product.price || "");
+            setDiscount(product.discount || 0);
+            setQuantity(product.quantity || "");
+            
+            // Store existing images
+            if (product.images && product.images.length > 0) {
+                setExistingImages(product.images);
+            }
+        }
+    }, [dispatch, isEditMode, product]);
 
     /* Category Handlers */
     const handleMainChange = (e) => {
@@ -56,147 +72,217 @@ export default function AddProduct({ onClose }) {
         setImages(prev => [...prev, ...files]);
     };
 
-
-    const removeImage = (index) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
+    const removeImage = (index, isExisting = false) => {
+        if (isExisting) {
+            const removedImage = existingImages[index];
+            setRemovedExistingImages(prev => [...prev, removedImage]);
+            setExistingImages(prev => prev.filter((_, i) => i !== index));
+        } else {
+            setImages(prev => prev.filter((_, i) => i !== index));
+        }
     };
 
     const handlePublish = () => {
-        // Basic client-side validation to prevent 400 errors
-        if (!productName.trim()) {
-            alert("Product name is required.");
-            return;
-        }
-        if (!description.trim() || description.length < 6) {
-            alert("Description must be at least 6 characters.");
-            return;
-        }
-        if (!price || price <= 0) {
-            alert("Valid price is required.");
-            return;
-        }
-        if (!quantity || quantity < 0) {
-            alert("Quantity must be 0 or greater.");
-            return;
-        }
-        if (!microCategory) {
-            alert("Please select a micro category");
-            return;
-        }
+        if (!isEditMode) {
+            // Create mode validation
+            if (!productName.trim()) {
+                alert("Product name is required.");
+                return;
+            }
+            if (!description.trim() || description.length < 6) {
+                alert("Description must be at least 6 characters.");
+                return;
+            }
+            if (!price || price <= 0) {
+                alert("Valid price is required.");
+                return;
+            }
+            if (!quantity || quantity < 0) {
+                alert("Quantity must be 0 or greater.");
+                return;
+            }
+            if (!microCategory) {
+                alert("Please select a micro category");
+                return;
+            }
 
-        const productData = {
-            productName,
-            brand,
-            description,
-            price: Number(price),
-            discount: Number(discount),
-            quantity: Number(quantity),  // Add quantity to match ProductDTO/Product model
-            specialPrice: Number(specialPrice.toFixed(2)),
-        };
+            const productData = {
+                productName,
+                brand,
+                description,
+                price: Number(price),
+                discount: Number(discount),
+                quantity: Number(quantity),
+                specialPrice: Number(specialPrice.toFixed(2)),
+            };
 
-        dispatch(
-            createProduct(
-                productData,
-                images,
-                microCategory, // 🔥 MICRO category ID
-                2              // 🔥 sellerId (replace with logged-in seller id)
-            )
-        );
+            dispatch(
+                createProduct(
+                    productData,
+                    images,
+                    microCategory,
+                    2
+                )
+            ).then(() => {
+                onClose();
+            }).catch((error) => {
+                console.error("Create failed:", error);
+                alert("Failed to create product. Please try again.");
+            });
+        } else {
+            // Edit mode validation
+            if (!description.trim() || description.length < 6) {
+                alert("Description must be at least 6 characters.");
+                return;
+            }
+            if (!price || price <= 0) {
+                alert("Valid price is required.");
+                return;
+            }
+            if (!quantity || quantity < 0) {
+                alert("Quantity must be 0 or greater.");
+                return;
+            }
 
-        onClose();
+            const productData = {
+                productName: product.productName, // Include productName to pass validation
+                brand: product.brand, // Include brand to pass validation
+                description,
+                price: Number(price),
+                discount: Number(discount),
+                quantity: Number(quantity),
+                specialPrice: Number(specialPrice.toFixed(2)),
+            };
+
+            dispatch(
+                updateProduct(
+                    product.productId,
+                    productData,
+                    images,
+                    existingImages
+                )
+            ).then(() => {
+                onClose();
+            }).catch((error) => {
+                console.error("Update failed:", error);
+                alert("Failed to update product. Please try again.");
+            });
+        }
     };
 
 
     return (
         <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-sm border">
-            <h1 className="text-2xl font-bold mb-8 text-gray-800">Create New Product</h1>
+            <h1 className="text-2xl font-bold mb-8 text-gray-800">
+                {isEditMode ? "Edit Product" : "Create New Product"}
+            </h1>
 
-            {/* 1. Category Selection */}
-            <section className="mb-10">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">1</span>
-                    Category Selection
-                </h2>
-                <p className="text-sm text-gray-500 mb-4">Provide accurate details to ensure your product is easily discoverable by customers.</p>
+            {/* 1. Category Selection - Disabled in Edit Mode */}
+            {!isEditMode && (
+                <section className="mb-10">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">1</span>
+                        Category Selection
+                    </h2>
+                    <p className="text-sm text-gray-500 mb-4">Provide accurate details to ensure your product is easily discoverable by customers.</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {/* Main Category */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Main Category</label>
-                        <select
-                            value={mainCategory}
-                            onChange={handleMainChange}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Select Main Category</option>
-                            {mainCategories.map(cat => (
-                                <option key={cat.categoryId} value={cat.categoryId}>
-                                    {cat.categoryName}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {/* Main Category */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Main Category</label>
+                            <select
+                                value={mainCategory}
+                                onChange={handleMainChange}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">Select Main Category</option>
+                                {mainCategories.map(cat => (
+                                    <option key={cat.categoryId} value={cat.categoryId}>
+                                        {cat.categoryName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Sub Category */}
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Sub Category</label>
+                            <select
+                                value={subCategory}
+                                onChange={handleSubChange}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">Select Sub Category</option>
+                                {subCategories.map(cat => (
+                                    <option key={cat.categoryId} value={cat.categoryId}>
+                                        {cat.categoryName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Micro Category */}
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Micro Category</label>
+                            <select
+                                value={microCategory}
+                                onChange={handleMicroChange}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">Select Micro Category</option>
+                                {microCategories.map(cat => (
+                                    <option key={cat.categoryId} value={cat.categoryId}>
+                                        {cat.categoryName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
-                    {/* Sub Category */}
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Sub Category</label>
-                        <select
-                            value={subCategory}
-                            onChange={handleSubChange}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Select Sub Category</option>
-                            {subCategories.map(cat => (
-                                <option key={cat.categoryId} value={cat.categoryId}>
-                                    {cat.categoryName}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                        Selected path:
+                        <strong>
+                            {" "}
+                            {mainCategory && mainCategories.find(c => c.categoryId == mainCategory)?.categoryName}
+                            {" → "}
+                            {subCategory && subCategories.find(c => c.categoryId == subCategory)?.categoryName}
+                            {" → "}
+                            {microCategory && microCategories.find(c => c.categoryId == microCategory)?.categoryName}
+                        </strong>
                     </div>
+                </section>
+            )}
 
-                    {/* Micro Category */}
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Micro Category</label>
-                        <select
-                            value={microCategory}
-                            onChange={handleMicroChange}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Select Micro Category</option>
-                            {microCategories.map(cat => (
-                                <option key={cat.categoryId} value={cat.categoryId}>
-                                    {cat.categoryName}
-                                </option>
-                            ))}
-                        </select>
+            {/* Show category info in edit mode */}
+            {isEditMode && product && (
+                <section className="mb-10">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full bg-gray-400 text-white flex items-center justify-center text-sm font-bold">1</span>
+                        Category
+                    </h2>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-gray-700">
+                            <span className="font-medium">Category:</span> {product.categoryName || "—"}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1">Category cannot be changed after product creation</p>
                     </div>
-                </div>
-
-                <div className="mt-4 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                    Selected path:
-                    <strong>
-                        {" "}
-                        {mainCategory && mainCategories.find(c => c.categoryId == mainCategory)?.categoryName}
-                        {" → "}
-                        {subCategory && subCategories.find(c => c.categoryId == subCategory)?.categoryName}
-                        {" → "}
-                        {microCategory && microCategories.find(c => c.categoryId == microCategory)?.categoryName}
-                    </strong>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* 2. Product Information */}
             <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">2</span>
+                    <span className={`w-8 h-8 rounded-full ${isEditMode ? "bg-blue-600" : "bg-blue-600"} text-white flex items-center justify-center text-sm font-bold`}>
+                        {isEditMode ? "1" : "2"}
+                    </span>
                     Product Information
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    {/* Product Name */}
+                    {/* Product Name - Read only in edit mode */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Product Name</label>
                         <input
@@ -204,11 +290,13 @@ export default function AddProduct({ onClose }) {
                             value={productName}
                             onChange={e => setProductName(e.target.value)}
                             placeholder="e.g. Noise ColorFit Ultra 3 Smartwatch"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            disabled={isEditMode}
+                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${isEditMode ? "bg-gray-100 cursor-not-allowed" : ""}`}
                         />
+                        {isEditMode && <p className="text-xs text-gray-500 mt-1">Product name cannot be changed</p>}
                     </div>
 
-                    {/* Brand */}
+                    {/* Brand - Read only in edit mode */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Brand</label>
                         <input
@@ -216,8 +304,10 @@ export default function AddProduct({ onClose }) {
                             value={brand}
                             onChange={e => setBrand(e.target.value)}
                             placeholder="e.g. Noise, boAt, Fire-Boltt"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            disabled={isEditMode}
+                            className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${isEditMode ? "bg-gray-100 cursor-not-allowed" : ""}`}
                         />
+                        {isEditMode && <p className="text-xs text-gray-500 mt-1">Brand cannot be changed</p>}
                     </div>
 
                     {/* Price */}
@@ -288,12 +378,14 @@ export default function AddProduct({ onClose }) {
             {/* 3. Product Media */}
             <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">3</span>
+                    <span className={`w-8 h-8 rounded-full ${isEditMode ? "bg-blue-600" : "bg-blue-600"} text-white flex items-center justify-center text-sm font-bold`}>
+                        {isEditMode ? "2" : "3"}
+                    </span>
                     Product Media
                 </h2>
 
                 <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-                    {images.length === 0 ? (
+                    {images.length === 0 && existingImages.length === 0 ? (
                         <>
                             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -315,20 +407,46 @@ export default function AddProduct({ onClose }) {
                         </>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {images.map((file, index) => (
-                                <div key={index} className="relative group">
+                            {/* Existing Images (in edit mode) */}
+                            {existingImages.map((imageUrl, index) => (
+                                <div key={`existing-${index}`} className="relative group">
                                     <img
-                                        src={URL.createObjectURL(file)}   // ✅ correct
+                                        src={imageUrl}
+                                        alt={`existing-${index}`}
+                                        className="w-full h-40 object-cover rounded-lg border"
+                                    />
+                                    <button
+                                        onClick={() => removeImage(index, true)}
+                                        className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center"
+                                    >
+                                        ×
+                                    </button>
+                                    {index === 0 && (
+                                        <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                                            Primary
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                            
+                            {/* New Images */}
+                            {images.map((file, index) => (
+                                <div key={`new-${index}`} className="relative group">
+                                    <img
+                                        src={URL.createObjectURL(file)}
                                         alt={`preview-${index}`}
                                         className="w-full h-40 object-cover rounded-lg border"
                                     />
 
                                     <button
-                                        onClick={() => removeImage(index)}
+                                        onClick={() => removeImage(index, false)}
                                         className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center"
                                     >
                                         ×
                                     </button>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
+                                        New
+                                    </span>
                                 </div>
                             ))}
 
@@ -373,7 +491,7 @@ export default function AddProduct({ onClose }) {
                     </button>
                     <button onClick={handlePublish}
                         className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium cursor-pointer">
-                        Publish Product
+                        {isEditMode ? "Update Product" : "Publish Product"}
                     </button>
                 </div>
             </div>

@@ -81,12 +81,15 @@ export const createProduct = (
       type: "CREATE_PRODUCT_SUCCESS",
       payload: data,
     });
+    
+    return data;
 
   } catch (error) {
     dispatch({
       type: "CREATE_PRODUCT_FAILURE",
       payload: error.response?.data?.message || error.message,
     });
+    throw error;
   }
 };
 
@@ -122,5 +125,106 @@ export const fetchSellerProducts = (sellerId, pageNumber = 0, pageSize = 5, sort
       type: "FETCH_SELLER_PRODUCTS_FAILURE",
       payload: error.response?.data?.message || error.message,
     });
+  }
+};
+
+/* ================= SELLER PRODUCT STATISTICS ================= */
+
+export const fetchSellerProductStats = (sellerId) => async (dispatch) => {
+  try {
+    dispatch({ type: "FETCH_SELLER_STATS_REQUEST" });
+
+    const { data } = await api.get(`/seller/${sellerId}/products/stats`);
+
+    console.log("Seller Stats Response:", data);
+
+    dispatch({
+      type: "FETCH_SELLER_STATS_SUCCESS",
+      payload: data,
+    });
+
+  } catch (error) {
+    dispatch({
+      type: "FETCH_SELLER_STATS_FAILURE",
+      payload: error.response?.data?.message || error.message,
+    });
+  }
+};
+
+/* ================= UPDATE PRODUCT ================= */
+
+export const updateProduct = (productId, productData, newImages, existingImages) => async (dispatch) => {
+  try {
+    dispatch({ type: "UPDATE_PRODUCT_REQUEST" });
+
+    console.log("Updating product:", productId, productData);
+    console.log("New images:", newImages?.length || 0);
+    console.log("Existing images:", existingImages);
+
+    const formData = new FormData();
+
+    // Append product JSON
+    formData.append(
+      "product",
+      new Blob([JSON.stringify(productData)], {
+        type: "application/json",
+      })
+    );
+
+    // Append existing images to keep (as simple string)
+    if (existingImages && existingImages.length > 0) {
+      formData.append("existingImages", JSON.stringify(existingImages));
+    }
+
+    // Append new images
+    if (newImages && newImages.length > 0) {
+      newImages.forEach((file) => {
+        formData.append("images", file);
+      });
+    }
+
+    const { data } = await api.put(`/seller/products/${productId}`, formData);
+    
+    console.log("Update response:", data);
+
+    dispatch({
+      type: "UPDATE_PRODUCT_SUCCESS",
+      payload: data,
+    });
+    
+    return data;
+
+  } catch (error) {
+    dispatch({
+      type: "UPDATE_PRODUCT_FAILURE",
+      payload: error.response?.data?.message || error.message,
+    });
+    throw error;
+  }
+};
+
+/* ================= DELETE PRODUCT ================= */
+
+export const deleteProduct = (productId, sellerId) => async (dispatch) => {
+  try {
+    dispatch({ type: "DELETE_PRODUCT_REQUEST" });
+
+    await api.delete(`/seller/products/${productId}`);
+
+    dispatch({
+      type: "DELETE_PRODUCT_SUCCESS",
+      payload: productId,
+    });
+
+    // Refresh products and stats after deletion
+    dispatch(fetchSellerProducts(sellerId, 0, 5, "productId", "asc"));
+    dispatch(fetchSellerProductStats(sellerId));
+
+  } catch (error) {
+    dispatch({
+      type: "DELETE_PRODUCT_FAILURE",
+      payload: error.response?.data?.message || error.message,
+    });
+    throw error;
   }
 };

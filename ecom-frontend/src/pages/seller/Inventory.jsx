@@ -10,35 +10,58 @@ import {
 } from "react-icons/fa";
 import AddProduct from "./AddProduct";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchSellerProducts } from "../../store/actions/productActions";
-
-/* ---------- Static Stats ---------- */
-const stats = {
-  total: 1248,
-  totalChange: "+12% from last month",
-  outOfStock: 12,
-  outOfStockChange: "-2 since yesterday",
-  lowStock: 45,
-  lowStockChange: "Requires attention",
-};
+import { fetchSellerProducts, fetchSellerProductStats, deleteProduct } from "../../store/actions/productActions";
 
 
 const Inventory = () => {
   const dispatch = useDispatch();
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState("productId");
   const [sortOrder, setSortOrder] = useState("asc");
   const pageSize = 5; // Matches backend default
 
-  const { products, loading, pagination } = useSelector(
+  const { products, loading, pagination, stats, statsLoading } = useSelector(
     (state) => state.products
   );
 
   const sellerId = 2; // 🔥 later replace with logged-in seller id
 
+  const handleAddProduct = () => {
+    setIsEditMode(false);
+    setSelectedProduct(null);
+    setShowAddProduct(true);
+  };
+
+  const handleEditProduct = (product) => {
+    setIsEditMode(true);
+    setSelectedProduct(product);
+    setShowAddProduct(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowAddProduct(false);
+    setIsEditMode(false);
+    setSelectedProduct(null);
+  };
+
+  const handleDeleteProduct = (product) => {
+    if (window.confirm(`Are you sure you want to delete "${product.productName}"?\n\nThis action cannot be undone.`)) {
+      dispatch(deleteProduct(product.productId, sellerId))
+        .then(() => {
+          alert("Product deleted successfully!");
+        })
+        .catch((error) => {
+          alert("Failed to delete product: " + error.message);
+        });
+    }
+  };
+
   useEffect(() => {
     dispatch(fetchSellerProducts(sellerId, currentPage, pageSize, sortBy, sortOrder));
+    dispatch(fetchSellerProductStats(sellerId));
   }, [dispatch, sellerId, currentPage, sortBy, sortOrder]);
 
   const handlePrevious = () => {
@@ -72,7 +95,7 @@ const Inventory = () => {
         <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-md flex items-center gap-2 hover:bg-blue-700 cursor-pointer"
-          onClick={() => setShowAddProduct(true)}
+          onClick={handleAddProduct}
         >
           + Add Product
         </button>
@@ -86,8 +109,10 @@ const Inventory = () => {
             <FaClipboardList className="text-blue-500 text-3xl" />
             <div>
               <p className="text-sm text-gray-600">Total Products</p>
-              <p className="text-3xl font-bold">{stats.total}</p>
-              <p className="text-sm text-green-600">{stats.totalChange}</p>
+              <p className="text-3xl font-bold">
+                {statsLoading ? "..." : stats.totalProducts}
+              </p>
+              <p className="text-sm text-green-600">All products in inventory</p>
             </div>
           </div>
         </div>
@@ -97,8 +122,10 @@ const Inventory = () => {
             <FaExclamationCircle className="text-red-500 text-3xl" />
             <div>
               <p className="text-sm text-gray-600">Out of Stock</p>
-              <p className="text-3xl font-bold text-red-600">{stats.outOfStock}</p>
-              <p className="text-sm text-red-600">{stats.outOfStockChange}</p>
+              <p className="text-3xl font-bold text-red-600">
+                {statsLoading ? "..." : stats.outOfStock}
+              </p>
+              <p className="text-sm text-red-600">Requires immediate attention</p>
             </div>
           </div>
         </div>
@@ -108,8 +135,10 @@ const Inventory = () => {
             <FaExclamationTriangle className="text-yellow-500 text-3xl" />
             <div>
               <p className="text-sm text-gray-600">Low Stock</p>
-              <p className="text-3xl font-bold text-yellow-600">{stats.lowStock}</p>
-              <p className="text-sm text-yellow-600">{stats.lowStockChange}</p>
+              <p className="text-3xl font-bold text-yellow-600">
+                {statsLoading ? "..." : stats.lowStock}
+              </p>
+              <p className="text-sm text-yellow-600">Less than 10 items remaining</p>
             </div>
           </div>
         </div>
@@ -214,10 +243,16 @@ const Inventory = () => {
 
                   {/* ACTIONS */}
                   <td className="p-4 flex gap-3">
-                    <button className="text-blue-600 hover:text-blue-800">
+                    <button 
+                      className="text-blue-600 hover:text-blue-800"
+                      onClick={() => handleEditProduct(product)}
+                    >
                       <FaEdit />
                     </button>
-                    <button className="text-red-600 hover:text-red-800">
+                    <button 
+                      className="text-red-600 hover:text-red-800"
+                      onClick={() => handleDeleteProduct(product)}
+                    >
                       <FaTrash />
                     </button>
                   </td>
@@ -256,13 +291,17 @@ const Inventory = () => {
       {showAddProduct && (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-[1px] flex items-center justify-center z-50 transition-all duration-300"
-          onClick={() => setShowAddProduct(false)}
+          onClick={handleCloseModal}
         >
           <div
             className="bg-white rounded-lg shadow-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto transition-all duration-300 ease-out transform scale-95 animate-in fade-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <AddProduct onClose={() => setShowAddProduct(false)} />
+            <AddProduct 
+              onClose={handleCloseModal} 
+              isEditMode={isEditMode}
+              product={selectedProduct}
+            />
           </div>
         </div>
       )}

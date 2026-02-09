@@ -48,4 +48,12 @@ public interface ProductRepository extends JpaRepository<Product,Long> {
     boolean existsByProductNameIgnoreCaseAndCategoryCategoryId(@NotBlank(message = "Product name must not be empty") String productName, Long categoryId);
 
     Page<Product> findByUser_UserId(Long sellerId, Pageable pageDetails);
+
+    // Count queries for seller statistics
+    long countByUser_UserId(Long sellerId);
+
+    long countByUser_UserIdAndQuantity(Long sellerId, Integer quantity);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.user.userId = :sellerId AND p.quantity > 0 AND p.quantity < :threshold")
+    long countLowStockBySellerId(@Param("sellerId") Long sellerId, @Param("threshold") Integer threshold);
 }
