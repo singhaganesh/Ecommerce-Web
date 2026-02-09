@@ -51,6 +51,7 @@ const Inventory = () => {
     if (pagination && currentPage < pagination.totalPages - 1) {
       setCurrentPage(currentPage + 1);
     }
+    
   };
 
   const handleSort = (newSortBy) => {

@@ -33,4 +33,4 @@ build/
 .vscode/
 
 # Ignore dev environment config
-src/main/resources/application-dev.properties
+#src/main/resources/application-dev.properties
