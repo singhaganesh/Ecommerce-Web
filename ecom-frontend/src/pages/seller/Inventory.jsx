@@ -11,10 +11,12 @@ import {
 import AddProduct from "./AddProduct";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSellerProducts, fetchSellerProductStats, deleteProduct } from "../../store/actions/productActions";
+import { useAuth } from "../../context/AuthContext";
 
 
 const Inventory = () => {
   const dispatch = useDispatch();
+  const { getUserId } = useAuth();
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -27,7 +29,7 @@ const Inventory = () => {
     (state) => state.products
   );
 
-  const sellerId = 2; // 🔥 later replace with logged-in seller id
+  const sellerId = getUserId(); // Get actual logged-in seller ID from auth context
 
   const handleAddProduct = () => {
     setIsEditMode(false);

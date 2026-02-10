@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 
 import Home from "./pages/user/Home";
 import Categories from "./pages/user/Categories";
@@ -6,6 +6,9 @@ import Search from "./pages/user/Search";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+
+// Auth Pages
+import Login from "./auth/Login";
 
 // Seller Register Pages
 import SellerRegisterStep1 from "./auth/SellerRegisterStep1";
@@ -20,15 +23,20 @@ import Orders from "./pages/seller/Orders";
 import Customers from "./pages/seller/Customers";
 import Reports from "./pages/seller/Reports";
 
+// Protected Route
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "./context/AuthContext";
+
 
 // ---------- Layout Wrapper ----------
 function Layout({ children }) {
   const location = useLocation();
 
-  // Hide Navbar & Footer on seller pages
+  // Hide Navbar & Footer on seller pages and login page
   const hideLayout =
     location.pathname.startsWith("/seller/register") ||
-    location.pathname.startsWith("/seller");
+    location.pathname.startsWith("/seller") ||
+    location.pathname === "/login";
 
   return (
     <>
@@ -42,15 +50,36 @@ function Layout({ children }) {
 
 // ---------- App ----------
 function App() {
+  const { isAuthenticated, hasRole } = useAuth();
+
   return (
     <BrowserRouter>
       <Layout>
         <Routes>
 
-          {/* ================= USER PAGES ================= */}
+          {/* ================= PUBLIC PAGES ================= */}
           <Route path="/" element={<Home />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/search" element={<Search />} />
+          
+          
+          {/* ================= AUTH PAGES ================= */}
+          <Route 
+            path="/login" 
+            element={
+              isAuthenticated() ? (
+                hasRole('ROLE_ADMIN') ? (
+                  <Navigate to="/admin/dashboard" replace />
+                ) : hasRole('ROLE_SELLER') ? (
+                  <Navigate to="/seller/dashboard" replace />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              ) : (
+                <Login />
+              )
+            } 
+          />
 
 
           {/* ================= SELLER REGISTER ================= */}
@@ -59,14 +88,40 @@ function App() {
           <Route path="/seller/register/security" element={<SellerRegisterStep3 />} />
 
 
-          {/* ================= SELLER PANEL ================= */}
-          <Route path="/seller" element={<SellerLayout />}>
+          {/* ================= SELLER PANEL (Protected) ================= */}
+          <Route 
+            path="/seller" 
+            element={
+              <ProtectedRoute allowedRoles={['ROLE_SELLER', 'ROLE_ADMIN']}>
+                <SellerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="orders" element={<Orders />} />
             <Route path="customers" element={<Customers />} />
             <Route path="reports" element={<Reports />} />
           </Route>
+
+
+          {/* ================= ADMIN PANEL (Protected) ================= */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute allowedRoles={['ROLE_ADMIN']}>
+                <div>Admin Panel Layout</div>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<div>Admin Dashboard</div>} />
+          </Route>
+
+
+          {/* ================= 404 - Catch All ================= */}
+          <Route path="*" element={<Navigate to="/" replace />} />
 
         </Routes>
       </Layout>

@@ -3,11 +3,15 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMainCategories, fetchChildrenCategories } from "../../store/actions/categoryActions";
 import { createProduct, updateProduct } from "../../store/actions/productActions";
+import { useAuth } from "../../context/AuthContext";
 
 export default function AddProduct({ onClose, isEditMode = false, product = null }) {
 
     const dispatch = useDispatch();
+    const { getUserId } = useAuth();
     const { mainCategories, subCategories, microCategories } = useSelector(state => state.category);
+    
+    const sellerId = getUserId(); // Get actual logged-in seller ID from auth context
 
     const [mainCategory, setMainCategory] = useState("");
     const [subCategory, setSubCategory] = useState("");
@@ -121,7 +125,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                     productData,
                     images,
                     microCategory,
-                    2
+                    sellerId // Use dynamic seller ID from auth context
                 )
             ).then(() => {
                 onClose();
