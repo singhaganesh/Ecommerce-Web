@@ -23,7 +23,7 @@ const Inventory = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [sortBy, setSortBy] = useState("productId");
   const [sortOrder, setSortOrder] = useState("asc");
-  const pageSize = 5; // Matches backend default
+  const pageSize = 10; // Matches backend default
 
   const { products, loading, pagination, stats, statsLoading } = useSelector(
     (state) => state.products
@@ -206,14 +206,14 @@ const Inventory = () => {
                 <tr key={product.productId} className="border-t hover:bg-gray-50">
 
                   {/* PRODUCT */}
-                  <td className="p-4 flex items-center gap-3">
+                  <td className="p-4 flex items-center gap-4">
                     <img
                       src={product.primaryImage || "/placeholder.png"}
-                      className="w-12 h-12 rounded object-cover"
+                      className="w-20 h-20 rounded-lg object-cover shadow-sm"
                       alt={product.productName}
                     />
                     <div>
-                      <p className="font-medium">{product.productName}</p>
+                      <p className="font-medium text-lg">{product.productName}</p>
                       <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                     </div>
                   </td>
