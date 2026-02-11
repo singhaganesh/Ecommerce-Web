@@ -5,6 +5,7 @@ import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.OrderDTO;
 import com.ecommerce.project.payload.OrderItemDTO;
+import com.ecommerce.project.payload.ShippingAddressDTO;
 import com.ecommerce.project.repository.*;
 import jakarta.transaction.Transactional;
 import org.modelmapper.ModelMapper;
@@ -47,7 +48,6 @@ public class OrderServiceImpl implements OrderService{
     @Override
     @Transactional
     public OrderDTO placeOrder(String emailId, Long addressId, String paymentMethod, String pgName, String pgPaymentId, String pgStatus, String pgResponseMessage) {
-        // Getting User Cart
         Cart cart = cartRepository.findCartByEmail(emailId);
         if (cart == null){
             throw  new ResourceNotFoundException("Cart","email",emailId);
@@ -55,12 +55,11 @@ public class OrderServiceImpl implements OrderService{
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(()-> new ResourceNotFoundException("Address","addressId",addressId));
 
-        // Create a new order with payment items
         Order order = new Order();
         order.setEmail(emailId);
         order.setOrderDate(LocalDate.now());
         order.setTotalAmount(cart.getTotalPrice());
-        order.setOrderStatus("Order Accepted !");
+        order.setOrderStatus("PENDING");
         order.setAddress(address);
 
         Payment payment = new Payment(paymentMethod,pgPaymentId,pgStatus,pgResponseMessage,pgName);
@@ -70,7 +69,6 @@ public class OrderServiceImpl implements OrderService{
 
         Order savedOrder = orderRepository.save(order);
 
-        // Get items from the cart info the order items
         List<CartItem> cartItems = cart.getCartItems();
         if (cartItems.isEmpty()){
             throw new APIException("Cart is empty!");
@@ -88,25 +86,74 @@ public class OrderServiceImpl implements OrderService{
         }
         orderItems = orderItemRepository.saveAll(orderItems);
 
-        // Update product stock
         cart.getCartItems().forEach(item -> {
             int quantity = item.getQuantity();
             Product product = item.getProduct();
             product.setQuantity(product.getQuantity() - quantity);
             productRepository.save(product);
-
-            // Clear the cart
             cartService.deleteProductFromCart(cart.getCartId(),item.getProduct().getProductId());
         });
 
-        // Send back the order summary
         OrderDTO orderDTO = modelMapper.map(savedOrder,OrderDTO.class);
+        orderDTO.setOrderItems(new ArrayList<>());
         orderItems.forEach(item ->
                 orderDTO.getOrderItems().add(
                         modelMapper.map(item, OrderItemDTO.class)
                 ));
         orderDTO.setAddressId(addressId);
+        orderDTO.setStatus(savedOrder.getOrderStatus());
 
         return orderDTO;
+    }
+
+    @Override
+    public List<OrderDTO> getOrdersBySellerId(Long sellerId) {
+        List<Order> orders = orderRepository.findOrdersBySellerId(sellerId);
+        return orders.stream().map(this::mapToOrderDTO).toList();
+    }
+
+    @Override
+    public OrderDTO getOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "orderId", orderId));
+        return mapToOrderDTO(order);
+    }
+
+    @Override
+    public OrderDTO updateOrderStatus(Long orderId, String status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order", "orderId", orderId));
+        order.setOrderStatus(status);
+        Order updatedOrder = orderRepository.save(order);
+        return mapToOrderDTO(updatedOrder);
+    }
+
+    private OrderDTO mapToOrderDTO(Order order) {
+        OrderDTO dto = modelMapper.map(order, OrderDTO.class);
+        dto.setStatus(order.getOrderStatus());
+        
+        if (order.getPayment() != null) {
+            dto.setPaymentMethod(order.getPayment().getPaymentMethod());
+        }
+        
+        if (order.getOrderItems() != null) {
+            dto.setOrderItems(order.getOrderItems().stream()
+                    .map(item -> modelMapper.map(item, OrderItemDTO.class))
+                    .toList());
+        }
+        
+        if (order.getAddress() != null) {
+            Address addr = order.getAddress();
+            ShippingAddressDTO shippingAddr = new ShippingAddressDTO();
+            shippingAddr.setFullName(addr.getUser() != null ? addr.getUser().getUserName() : "");
+            shippingAddr.setAddressLine1(addr.getStreet());
+            shippingAddr.setAddressLine2(addr.getBuildingName());
+            shippingAddr.setCity(addr.getCity());
+            shippingAddr.setState(addr.getState());
+            shippingAddr.setPincode(addr.getPincode());
+            dto.setShippingAddress(shippingAddr);
+        }
+        
+        return dto;
     }
 }

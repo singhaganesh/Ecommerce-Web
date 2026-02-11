@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api")
 public class OrderController {
@@ -19,7 +21,7 @@ public class OrderController {
         this.authUtil = authUtil;
     }
 
-    @PostMapping("/oder/users/payment/{paymentMethod}")
+    @PostMapping("/orders/users/payment/{paymentMethod}")
     public ResponseEntity<OrderDTO> orderProducts(@PathVariable String paymentMethod,
                                                   @RequestBody OrderRequestDTO orderRequestDTO){
         String emailId = authUtil.loggedInEmail();
@@ -34,5 +36,24 @@ public class OrderController {
         );
 
         return new ResponseEntity<>(order, HttpStatus.CREATED);
+    }
+
+    @GetMapping("/orders/seller/{sellerId}")
+    public ResponseEntity<List<OrderDTO>> getOrdersBySeller(@PathVariable Long sellerId) {
+        List<OrderDTO> orders = orderService.getOrdersBySellerId(sellerId);
+        return new ResponseEntity<>(orders, HttpStatus.OK);
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long orderId) {
+        OrderDTO order = orderService.getOrderById(orderId);
+        return new ResponseEntity<>(order, HttpStatus.OK);
+    }
+
+    @PutMapping("/orders/{orderId}/status")
+    public ResponseEntity<OrderDTO> updateOrderStatus(@PathVariable Long orderId,
+                                                      @RequestBody String status) {
+        OrderDTO order = orderService.updateOrderStatus(orderId, status);
+        return new ResponseEntity<>(order, HttpStatus.OK);
     }
 }
