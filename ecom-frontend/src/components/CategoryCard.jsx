@@ -4,23 +4,23 @@ const CategoryCard = ({ categoryId, categoryName, image, productCount }) => {
   return (
     <Link 
       to={`/categories/${categoryId}`}
-      className="flex flex-col items-center bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-4 cursor-pointer mb-5 group"
+      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
     >
       {/* Image Container */}
-      <div className="w-full h-44 rounded-xl overflow-hidden mb-3 relative">
+      <div className="aspect-square overflow-hidden">
         <img
-          src={image || "https://via.placeholder.com/400x300?text=Category"}
+          src={image || "https://via.placeholder.com/300x300?text=Category"}
           alt={categoryName}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300" />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
-      {/* Category Info */}
-      <div className="text-center w-full">
+      {/* Content Overlay */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
         <h3
-          className="text-lg font-bold mb-1 text-gray-800 group-hover:text-indigo-600 transition-colors truncate w-full"
+          className="text-white font-bold text-lg mb-1 drop-shadow-lg"
           title={categoryName}
         >
           {categoryName}
@@ -28,15 +28,17 @@ const CategoryCard = ({ categoryId, categoryName, image, productCount }) => {
         
         {/* Product Count */}
         {productCount !== undefined && (
-          <p className="text-sm text-gray-500 mb-2">
-            {productCount} {productCount === 1 ? 'Product' : 'Products'}
+          <p className="text-white/90 text-sm drop-shadow">
+            {productCount} {productCount === 1 ? 'Item' : 'Items'}
           </p>
         )}
+      </div>
 
-        {/* Shop Now Button */}
-        <button className="text-sm bg-indigo-600 text-white rounded-full px-4 py-1.5 hover:bg-indigo-700 transition-colors duration-300 font-medium">
-          Shop Now
-        </button>
+      {/* Hover Shop Button */}
+      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+          Shop →
+        </div>
       </div>
     </Link>
   );
