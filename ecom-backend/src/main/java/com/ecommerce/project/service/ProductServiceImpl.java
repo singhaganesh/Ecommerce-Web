@@ -416,15 +416,16 @@ public class ProductServiceImpl implements ProductService{
                                           List<MultipartFile> newImages, List<String> existingImages) throws IOException {
         System.out.println("=== UPDATE PRODUCT DEBUG ===");
         System.out.println("ProductId: " + productId);
-        System.out.println("ProductDTO: " + productDTO);
         System.out.println("New images count: " + (newImages != null ? newImages.size() : 0));
-        System.out.println("Existing images: " + existingImages);
+        System.out.println("Existing images count: " + (existingImages != null ? existingImages.size() : 0));
         
         // Find the product
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product", "productId", productId));
         
         System.out.println("Found product: " + product.getProductName());
+        System.out.println("Current quantity in DB: " + product.getQuantity());
+        System.out.println("Quantity from DTO: " + productDTO.getQuantity());
         System.out.println("Current images count: " + product.getImages().size());
         
         // Update editable fields
@@ -435,7 +436,7 @@ public class ProductServiceImpl implements ProductService{
         product.setQuantity(productDTO.getQuantity());
         product.setUpdatedAt(LocalDateTime.now());
         
-        System.out.println("Updated fields - Price: " + productDTO.getPrice() + ", Qty: " + productDTO.getQuantity());
+        System.out.println("Updated fields - Price: " + productDTO.getPrice() + ", New Qty: " + productDTO.getQuantity());
         
         // Handle images
         List<ProductImage> currentImages = new ArrayList<>(product.getImages());
@@ -488,21 +489,48 @@ public class ProductServiceImpl implements ProductService{
         
         Product updatedProduct = productRepository.save(product);
         
-        // Map to DTO
-        ProductDTO response = modelMapper.map(updatedProduct, ProductDTO.class);
-        response.setImages(
-                updatedProduct.getImages().stream()
-                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
-                        .collect(Collectors.toList())
-        );
+        // Manually create DTO to avoid ModelMapper overwriting fields
+        ProductDTO response = new ProductDTO();
+        response.setProductId(updatedProduct.getProductId());
+        response.setProductName(updatedProduct.getProductName());
+        response.setSku(updatedProduct.getSku());
+        response.setDescription(updatedProduct.getDescription());
+        response.setPrice(updatedProduct.getPrice());
+        response.setDiscount(updatedProduct.getDiscount());
+        response.setSpecialPrice(updatedProduct.getSpecialPrice());
+        response.setQuantity(updatedProduct.getQuantity());
+        response.setRating(updatedProduct.getRating());
+        response.setTotalReviews(updatedProduct.getTotalReviews());
+        response.setSoldCount(updatedProduct.getSoldCount());
+        response.setActive(updatedProduct.getActive());
+        response.setFeatured(updatedProduct.getFeatured());
+        response.setBestSeller(updatedProduct.isBestSeller());
+        response.setCreatedAt(updatedProduct.getCreatedAt());
+        response.setUpdatedAt(updatedProduct.getUpdatedAt());
         
-        response.setPrimaryImage(
-                updatedProduct.getImages().stream()
-                        .filter(ProductImage::isPrimaryImage)
-                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
-                        .findFirst()
-                        .orElse(null)
-        );
+        // Handle category
+        if (updatedProduct.getCategory() != null) {
+            response.setCategoryName(updatedProduct.getCategory().getCategoryName());
+        }
+        
+        // Handle brand
+        if (updatedProduct.getBrand() != null) {
+            response.setBrand(updatedProduct.getBrand());
+        }
+        
+        // Handle images
+        List<String> imageUrls = updatedProduct.getImages().stream()
+                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                .collect(Collectors.toList());
+        response.setImages(imageUrls);
+        
+        // Set primary image
+        String primaryImage = updatedProduct.getImages().stream()
+                .filter(ProductImage::isPrimaryImage)
+                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                .findFirst()
+                .orElse(null);
+        response.setPrimaryImage(primaryImage);
         
         return response;
     }

@@ -158,6 +158,12 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 specialPrice: Number(specialPrice.toFixed(2)),
             };
 
+            console.log("=== FRONTEND UPDATE DEBUG ===");
+            console.log("User entered quantity in input:", quantity);
+            console.log("Type of quantity:", typeof quantity);
+            console.log("Converted to Number:", Number(quantity));
+            console.log("Final productData.quantity:", productData.quantity);
+
             dispatch(
                 updateProduct(
                     product.productId,
@@ -165,7 +171,9 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                     images,
                     existingImages
                 )
-            ).then(() => {
+            ).then((response) => {
+                console.log("=== UPDATE SUCCESS ===");
+                console.log("Response from server:", response);
                 onClose();
             }).catch((error) => {
                 console.error("Update failed:", error);
