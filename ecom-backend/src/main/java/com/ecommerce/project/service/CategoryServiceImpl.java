@@ -60,6 +60,12 @@ public class CategoryServiceImpl implements CategoryService{
                 .map(category ->{
                     CategoryDTO categoryDTO = modelMapper.map(category, CategoryDTO.class);
                     categoryDTO.setImage(imageUtils.constructImageUrl(category.getImage()));
+                    // Set product count
+                    if (category.getProducts() != null) {
+                        categoryDTO.setProductCount(category.getProducts().size());
+                    } else {
+                        categoryDTO.setProductCount(0);
+                    }
                     return categoryDTO;
                 })
                 .toList();

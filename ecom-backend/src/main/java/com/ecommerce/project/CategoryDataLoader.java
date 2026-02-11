@@ -19,92 +19,151 @@ public class CategoryDataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        // Main Categories
+        /* =========================
+           MAIN CATEGORIES
+        ========================== */
         Category electronics = createCategory("Electronics", null, 1);
         Category fashion = createCategory("Fashion", null, 2);
-        Category sports = createCategory("Sports & Fitness", null, 3);
-        Category home = createCategory("Home & Kitchen", null, 4);
+        Category home = createCategory("Home & Living", null, 3);
+        Category sports = createCategory("Sports & Fitness", null, 4);
 
-        // Electronics Sub Categories
+
+        /* =========================
+           ELECTRONICS
+        ========================== */
         Category mobile = createCategory("Mobile Phones", electronics, null);
-        Category laptops = createCategory("Laptops", electronics, null);
-        Category accessories = createCategory("Accessories", electronics, null);
+        Category laptops = createCategory("Laptops & Computers", electronics, null);
+        Category audio = createCategory("Audio", electronics, null);
         Category smart = createCategory("Smart Devices", electronics, null);
+        Category accessories = createCategory("Accessories", electronics, null);
 
+        // Mobile
         createCategory("Android Phones", mobile, null);
         createCategory("iPhones", mobile, null);
         createCategory("Feature Phones", mobile, null);
 
+        // Laptops
         createCategory("Gaming Laptops", laptops, null);
         createCategory("Business Laptops", laptops, null);
         createCategory("Student Laptops", laptops, null);
+        createCategory("Desktop PCs", laptops, null);
 
-        createCategory("Headphones", accessories, null);
-        createCategory("Power Banks", accessories, null);
-        createCategory("Chargers", accessories, null);
+        // Audio
+        createCategory("Headphones", audio, null);
+        createCategory("Earbuds", audio, null);
+        createCategory("Bluetooth Speakers", audio, null);
+        createCategory("Soundbars", audio, null);
 
+        // Smart Devices
         createCategory("Smart Watches", smart, null);
         createCategory("Smart Bands", smart, null);
-        createCategory("Smart Home", smart, null);
+        createCategory("Smart Home Devices", smart, null);
+        createCategory("Smart Cameras", smart, null);
 
-        // Fashion
+        // Accessories
+        createCategory("Chargers", accessories, null);
+        createCategory("Power Banks", accessories, null);
+        createCategory("Phone Cases", accessories, null);
+        createCategory("Cables", accessories, null);
+
+
+        /* =========================
+           FASHION
+        ========================== */
         Category men = createCategory("Men", fashion, null);
         Category women = createCategory("Women", fashion, null);
         Category kids = createCategory("Kids", fashion, null);
+        Category fashionAccessories = createCategory("Fashion Accessories", fashion, null);
 
+        // Men
         createCategory("Shirts", men, null);
         createCategory("T-Shirts", men, null);
         createCategory("Jeans", men, null);
         createCategory("Shoes", men, null);
 
+        // Women
         createCategory("Dresses", women, null);
         createCategory("Sarees", women, null);
         createCategory("Tops", women, null);
         createCategory("Handbags", women, null);
 
+        // Kids
         createCategory("Boys Clothing", kids, null);
         createCategory("Girls Clothing", kids, null);
         createCategory("Kids Shoes", kids, null);
+        createCategory("School Wear", kids, null);
 
-        // Sports
-        Category cricket = createCategory("Cricket", sports, null);
-        Category football = createCategory("Football", sports, null);
-        Category gym = createCategory("Gym & Yoga", sports, null);
+        // Fashion Accessories
+        createCategory("Watches", fashionAccessories, null);
+        createCategory("Sunglasses", fashionAccessories, null);
+        createCategory("Wallets", fashionAccessories, null);
+        createCategory("Belts", fashionAccessories, null);
 
-        createCategory("Bats", cricket, null);
-        createCategory("Balls", cricket, null);
-        createCategory("Kits", cricket, null);
-        createCategory("Gloves", cricket, null);
 
-        createCategory("Football", football, null);
-        createCategory("Shoes", football, null);
-        createCategory("Jerseys", football, null);
-        createCategory("Gloves (Football)", football, null);
-
-        createCategory("Dumbbells", gym, null);
-        createCategory("Yoga Mats", gym, null);
-        createCategory("Resistance Bands", gym, null);
-        createCategory("Gym Accessories", gym, null);
-
-        // Home & Kitchen
+        /* =========================
+           HOME & LIVING
+        ========================== */
         Category furniture = createCategory("Furniture", home, null);
         Category kitchen = createCategory("Kitchen", home, null);
         Category decor = createCategory("Home Decor", home, null);
+        Category appliances = createCategory("Appliances", home, null);
 
-        createCategory("Sofa", furniture, null);
+        // Furniture
+        createCategory("Sofas", furniture, null);
         createCategory("Beds", furniture, null);
         createCategory("Tables", furniture, null);
         createCategory("Chairs", furniture, null);
 
+        // Kitchen
         createCategory("Cookware", kitchen, null);
         createCategory("Dinner Sets", kitchen, null);
-        createCategory("Storage", kitchen, null);
         createCategory("Kitchen Tools", kitchen, null);
+        createCategory("Storage Containers", kitchen, null);
 
+        // Decor
         createCategory("Wall Art", decor, null);
         createCategory("Lamps", decor, null);
         createCategory("Curtains", decor, null);
         createCategory("Showpieces", decor, null);
+
+        // Appliances
+        createCategory("Mixer Grinders", appliances, null);
+        createCategory("Microwave Ovens", appliances, null);
+        createCategory("Refrigerators", appliances, null);
+        createCategory("Washing Machines", appliances, null);
+
+
+        /* =========================
+           SPORTS & FITNESS
+        ========================== */
+        Category cricket = createCategory("Cricket", sports, null);
+        Category football = createCategory("Football", sports, null);
+        Category gym = createCategory("Gym Equipment", sports, null);
+        Category yoga = createCategory("Yoga & Wellness", sports, null);
+
+        // Cricket
+        createCategory("Bats", cricket, null);
+        createCategory("Balls", cricket, null);
+        createCategory("Gloves", cricket, null);
+        createCategory("Cricket Kits", cricket, null);
+
+        // Football
+        createCategory("Footballs", football, null);
+        createCategory("Jerseys", football, null);
+        createCategory("Football Shoes", football, null);
+        createCategory("Goalkeeper Gloves", football, null);
+
+        // Gym
+        createCategory("Dumbbells", gym, null);
+        createCategory("Resistance Bands", gym, null);
+        createCategory("Treadmills", gym, null);
+        createCategory("Exercise Cycles", gym, null);
+
+        // Yoga
+        createCategory("Yoga Mats", yoga, null);
+        createCategory("Foam Rollers", yoga, null);
+        createCategory("Skipping Ropes", yoga, null);
+        createCategory("Fitness Trackers", yoga, null);
     }
 
     private Category createCategory(String name, Category parent, Integer priority) {
@@ -119,4 +178,3 @@ public class CategoryDataLoader implements CommandLineRunner {
         });
     }
 }
-

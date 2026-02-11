@@ -2,6 +2,7 @@ const initialState = {
   mainCategories: [],
   subCategories: [],
   microCategories: [],
+  categories: [],
   loading: false,
   error: null,
 };
@@ -9,6 +10,14 @@ const initialState = {
 export const categoryReducer = (state = initialState, action) => {
 
   switch (action.type) {
+
+    case "FETCH_CATEGORIES":
+      return {
+        ...state,
+        loading: false,
+        categories: action.payload,
+        mainCategories: action.payload
+      };
 
     case "FETCH_MAIN_CATEGORIES_REQUEST":
     case "FETCH_CHILD_CATEGORIES_REQUEST":

@@ -4,6 +4,8 @@ const ProductCard = ({
   productId,
   productName,
   image,
+  primaryImage,
+  images,
   description,
   quantity,
   price,
@@ -15,16 +17,23 @@ const ProductCard = ({
 
   const hideExtraUI = pageFrom === "HOME";   // 👈 condition
 
+  // Get the correct image URL
+  const productImage = primaryImage || (images && images.length > 0 ? images[0] : null);
+
   return (
     <div className="border rounded-md shadow hover:shadow-lg transition p-2 bg-white">
 
       {/* Image */}
-      <div className="w-full h-36 overflow-hidden flex justify-center items-center">
-        <img
-          src={image}
-          alt={productName}
-          className="h-full object-contain"
-        />
+      <div className="w-full h-36 overflow-hidden flex justify-center items-center bg-gray-50">
+        {productImage ? (
+          <img
+            src={productImage}
+            alt={productName}
+            className="h-full object-contain"
+          />
+        ) : (
+          <div className="text-gray-400 text-sm">No Image</div>
+        )}
       </div>
 
       {/* Content */}

@@ -22,6 +22,8 @@ public class CategoryDTO {
     private Boolean active;       // enable/disable category
 
     private Integer priority;     // display order on home page
+    
+    private Integer productCount; // Number of products in this category
 
     private LocalDateTime createdAt;
 

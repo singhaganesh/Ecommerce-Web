@@ -50,7 +50,16 @@ function Layout({ children }) {
 
 // ---------- App ----------
 function App() {
-  const { isAuthenticated, hasRole } = useAuth();
+  const { isAuthenticated, hasRole, loading } = useAuth();
+
+  // Show loading spinner while auth state is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
