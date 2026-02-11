@@ -101,7 +101,7 @@ public class ProductServiceImpl implements ProductService{
         product.setSku(sku);
         product.setCategory(category);
         product.setUser(seller);
-        product.setFeatured(false);
+        product.setFeatured(productDTO.getFeatured() != null ? productDTO.getFeatured() : false);
         product.setRating(0.0);
         product.setTotalReviews(0);
         product.setActive(true);
@@ -258,7 +258,22 @@ public class ProductServiceImpl implements ProductService{
         List<ProductDTO> productDTOS = products.stream()
                 .map(product ->{
                     ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
-//                    productDTO.setImage(imageUtils.constructImageUrl(product.getImage()));
+                    
+                    // Map images to URLs
+                    if (product.getImages() != null && !product.getImages().isEmpty()) {
+                        List<String> imageUrls = product.getImages().stream()
+                                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                .collect(Collectors.toList());
+                        productDTO.setImages(imageUrls);
+                        
+                        // Set primary image
+                        ProductImage primaryImg = product.getImages().stream()
+                                .filter(ProductImage::isPrimaryImage)
+                                .findFirst()
+                                .orElse(product.getImages().get(0));
+                        productDTO.setPrimaryImage(imageUtils.constructImageUrl(primaryImg.getImageUrl()));
+                    }
+                    
                     return productDTO;
                 })
                 .toList();
@@ -434,6 +449,7 @@ public class ProductServiceImpl implements ProductService{
         product.setDiscount(productDTO.getDiscount());
         product.setSpecialPrice(productDTO.getSpecialPrice());
         product.setQuantity(productDTO.getQuantity());
+        product.setFeatured(productDTO.getFeatured() != null ? productDTO.getFeatured() : product.getFeatured());
         product.setUpdatedAt(LocalDateTime.now());
         
         System.out.println("Updated fields - Price: " + productDTO.getPrice() + ", New Qty: " + productDTO.getQuantity());

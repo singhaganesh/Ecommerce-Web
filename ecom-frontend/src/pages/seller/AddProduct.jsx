@@ -24,6 +24,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
     const [price, setPrice] = useState("");
     const [discount, setDiscount] = useState(0);
     const [quantity, setQuantity] = useState("");
+    const [featured, setFeatured] = useState(false);
 
     const [images, setImages] = useState([]);
     const [existingImages, setExistingImages] = useState([]);
@@ -43,6 +44,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
             setPrice(product.price || "");
             setDiscount(product.discount || 0);
             setQuantity(product.quantity || "");
+            setFeatured(product.featured || false);
             
             // Store existing images
             if (product.images && product.images.length > 0) {
@@ -118,6 +120,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 discount: Number(discount),
                 quantity: Number(quantity),
                 specialPrice: Number(specialPrice.toFixed(2)),
+                featured: featured,
             };
 
             dispatch(
@@ -133,6 +136,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 console.error("Create failed:", error);
                 alert("Failed to create product. Please try again.");
             });
+            return; // Don't proceed to close immediately
         } else {
             // Edit mode validation
             if (!description.trim() || description.length < 6) {
@@ -156,13 +160,8 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 discount: Number(discount),
                 quantity: Number(quantity),
                 specialPrice: Number(specialPrice.toFixed(2)),
+                featured: featured,
             };
-
-            console.log("=== FRONTEND UPDATE DEBUG ===");
-            console.log("User entered quantity in input:", quantity);
-            console.log("Type of quantity:", typeof quantity);
-            console.log("Converted to Number:", Number(quantity));
-            console.log("Final productData.quantity:", productData.quantity);
 
             dispatch(
                 updateProduct(
@@ -171,9 +170,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                     images,
                     existingImages
                 )
-            ).then((response) => {
-                console.log("=== UPDATE SUCCESS ===");
-                console.log("Response from server:", response);
+            ).then(() => {
                 onClose();
             }).catch((error) => {
                 console.error("Update failed:", error);
@@ -329,6 +326,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                             type="number"
                             value={price}
                             onChange={e => setPrice(e.target.value)}
+                            onWheel={(e) => e.target.blur()}
                             placeholder="e.g. 17999"
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
@@ -341,6 +339,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                             type="number"
                             value={discount}
                             onChange={e => setDiscount(e.target.value)}
+                            onWheel={(e) => e.target.blur()}
                             placeholder="e.g. 10"
                             min="0"
                             max="90"
@@ -355,10 +354,25 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                             type="number"
                             value={quantity}
                             onChange={e => setQuantity(e.target.value)}
+                            onWheel={(e) => e.target.blur()}
                             placeholder="e.g. 50"
                             min="0"
                             className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         />
+                    </div>
+
+                    {/* Featured Toggle */}
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            id="featured"
+                            checked={featured}
+                            onChange={e => setFeatured(e.target.checked)}
+                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                        />
+                        <label htmlFor="featured" className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            Mark as Featured Product
+                        </label>
                     </div>
 
                 </div>
