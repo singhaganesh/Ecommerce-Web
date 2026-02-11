@@ -1,4 +1,5 @@
 import { FaShoppingCart } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const ProductCard = ({
   productId,
@@ -15,26 +16,26 @@ const ProductCard = ({
 }) => {
   const isAvailable = quantity && Number(quantity) > 0;
 
-  const hideExtraUI = pageFrom === "HOME";   // 👈 condition
+  const hideExtraUI = pageFrom === "HOME";
 
-  // Get the correct image URL
   const productImage = primaryImage || (images && images.length > 0 ? images[0] : null);
 
   return (
     <div className="border rounded-md shadow hover:shadow-lg transition p-2 bg-white">
 
-      {/* Image */}
-      <div className="w-full h-36 overflow-hidden flex justify-center items-center bg-gray-50">
-        {productImage ? (
-          <img
-            src={productImage}
-            alt={productName}
-            className="h-full object-contain"
-          />
-        ) : (
-          <div className="text-gray-400 text-sm">No Image</div>
-        )}
-      </div>
+      <Link to={`/product/${productId}`} className="block">
+        <div className="w-full h-36 overflow-hidden flex justify-center items-center bg-gray-50">
+          {productImage ? (
+            <img
+              src={productImage}
+              alt={productName}
+              className="h-full object-contain hover:scale-105 transition duration-200"
+            />
+          ) : (
+            <div className="text-gray-400 text-sm">No Image</div>
+          )}
+        </div>
+      </Link>
 
       {/* Content */}
       <div className="mt-2 space-y-1">

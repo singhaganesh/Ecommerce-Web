@@ -1,45 +1,51 @@
 import { Link } from "react-router-dom";
+import electronicsImg from "../assets/CategoryImages/Electronics.jpg";
+import fashionImg from "../assets/CategoryImages/Fashion.jpg";
+import homeImg from "../assets/CategoryImages/Home & Living.jpg";
+import sportsImg from "../assets/CategoryImages/Sports & Fitness.jpg";
 
-const CategoryCard = ({ categoryId, categoryName, image, productCount }) => {
+const categoryImages = {
+  1: electronicsImg,
+  2: fashionImg,
+  3: homeImg,
+  4: sportsImg
+};
+
+const categoryNames = {
+  1: "Electronics",
+  2: "Fashion", 
+  3: "Home & Living",
+  4: "Sports & Fitness"
+};
+
+const CategoryCard = ({ categoryId, categoryName, productCount }) => {
+  const id = parseInt(categoryId) || 1;
+  const bgImage = categoryImages[id] || categoryImages[1];
+  const displayName = categoryName || categoryNames[id] || "Category";
+
   return (
     <Link 
-      to={`/categories/${categoryId}`}
-      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
+      to={`/search?category=${id}`}
+      className="relative w-full h-64 md:h-96 rounded-2xl overflow-hidden group cursor-pointer shadow-xl hover:shadow-2xl transition-all duration-300"
     >
-      {/* Image Container */}
-      <div className="aspect-square overflow-hidden">
-        <img
-          src={image || "https://via.placeholder.com/300x300?text=Category"}
-          alt={categoryName}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-        />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      </div>
+      <img 
+        src={bgImage} 
+        alt={displayName}
+        className="w-full h-full object-fill transition-transform duration-500 group-hover:scale-105"
+      />
 
-      {/* Content Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-        <h3
-          className="text-white font-bold text-lg mb-1 drop-shadow-lg"
-          title={categoryName}
-        >
-          {categoryName}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+
+      <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col justify-end h-full">
+        <h3 className="text-white text-4xl font-bold mb-2">
+          {displayName}
         </h3>
-        
-        {/* Product Count */}
-        {productCount !== undefined && (
-          <p className="text-white/90 text-sm drop-shadow">
-            {productCount} {productCount === 1 ? 'Item' : 'Items'}
-          </p>
-        )}
+        <p className="text-gray-300 text-lg">
+          {productCount || 0} products
+        </p>
       </div>
 
-      {/* Hover Shop Button */}
-      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="bg-white/90 backdrop-blur-sm text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-          Shop →
-        </div>
-      </div>
+      <div className="absolute inset-0 bg-indigo-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
     </Link>
   );
 };

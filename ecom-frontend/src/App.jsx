@@ -3,6 +3,11 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import Home from "./pages/user/Home";
 import Categories from "./pages/user/Categories";
 import Search from "./pages/user/Search";
+import ProductDetails from "./pages/user/ProductDetails";
+import Cart from "./pages/user/Cart";
+import Checkout from "./pages/user/Checkout";
+import OrderConfirmation from "./pages/user/OrderConfirmation";
+import UserOrders from "./pages/user/UserOrders";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -70,6 +75,25 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/product/:productId" element={<ProductDetails />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route 
+            path="/checkout" 
+            element={
+              <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SELLER', 'ROLE_ADMIN']}>
+                <Checkout />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+          <Route 
+            path="/orders" 
+            element={
+              <ProtectedRoute allowedRoles={['ROLE_USER', 'ROLE_SELLER', 'ROLE_ADMIN']}>
+                <UserOrders />
+              </ProtectedRoute>
+            } 
+          />
           
           
           {/* ================= AUTH PAGES ================= */}
