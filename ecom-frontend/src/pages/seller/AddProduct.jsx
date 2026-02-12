@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchMainCategories, fetchChildrenCategories } from "../../store/actions/categoryActions";
 import { createProduct, updateProduct } from "../../store/actions/productActions";
 import { useAuth } from "../../context/AuthContext";
+import ImageUploader from "../../components/ImageUploader";
 
 export default function AddProduct({ onClose, isEditMode = false, product = null }) {
 
@@ -11,7 +12,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
     const { getUserId } = useAuth();
     const { mainCategories, subCategories, microCategories } = useSelector(state => state.category);
     
-    const sellerId = getUserId(); // Get actual logged-in seller ID from auth context
+    const sellerId = getUserId();
 
     const [mainCategory, setMainCategory] = useState("");
     const [subCategory, setSubCategory] = useState("");
@@ -26,9 +27,9 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
     const [quantity, setQuantity] = useState("");
     const [featured, setFeatured] = useState(false);
 
-    const [images, setImages] = useState([]);
-    const [existingImages, setExistingImages] = useState([]);
-    const [removedExistingImages, setRemovedExistingImages] = useState([]);
+    // Images stored as { url: string, publicId: string, isPrimary: boolean }
+    const [productImages, setProductImages] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const specialPrice = price - (price * discount) / 100;
 
@@ -37,18 +38,22 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
         dispatch(fetchMainCategories());
         
         if (isEditMode && product) {
-            // Pre-fill editable fields
             setProductName(product.productName || "");
             setBrand(product.brand || "");
             setDescription(product.description || "");
-            setPrice(product.price || "");
+            setPrice(product.price !== undefined ? String(product.price) : "");
             setDiscount(product.discount || 0);
-            setQuantity(product.quantity || "");
+            setQuantity(product.quantity !== undefined ? String(product.quantity) : "");
             setFeatured(product.featured || false);
             
-            // Store existing images
+            // Convert existing images to new format
             if (product.images && product.images.length > 0) {
-                setExistingImages(product.images);
+                const formattedImages = product.images.map((url, index) => ({
+                    url: url,
+                    publicId: '',
+                    isPrimary: index === 0
+                }));
+                setProductImages(formattedImages);
             }
         }
     }, [dispatch, isEditMode, product]);
@@ -73,24 +78,13 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
         setMicroCategory(e.target.value);
     };
 
-    const handleImageChange = (e) => {
-        const files = Array.from(e.target.files);
-        setImages(prev => [...prev, ...files]);
+    const handleImagesUploaded = (images) => {
+        setProductImages(images);
     };
 
-    const removeImage = (index, isExisting = false) => {
-        if (isExisting) {
-            const removedImage = existingImages[index];
-            setRemovedExistingImages(prev => [...prev, removedImage]);
-            setExistingImages(prev => prev.filter((_, i) => i !== index));
-        } else {
-            setImages(prev => prev.filter((_, i) => i !== index));
-        }
-    };
-
-    const handlePublish = () => {
+    const handlePublish = async () => {
+        // Validation
         if (!isEditMode) {
-            // Create mode validation
             if (!productName.trim()) {
                 alert("Product name is required.");
                 return;
@@ -111,34 +105,11 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 alert("Please select a micro category");
                 return;
             }
-
-            const productData = {
-                productName,
-                brand,
-                description,
-                price: Number(price),
-                discount: Number(discount),
-                quantity: Number(quantity),
-                specialPrice: Number(specialPrice.toFixed(2)),
-                featured: featured,
-            };
-
-            dispatch(
-                createProduct(
-                    productData,
-                    images,
-                    microCategory,
-                    sellerId // Use dynamic seller ID from auth context
-                )
-            ).then(() => {
-                onClose();
-            }).catch((error) => {
-                console.error("Create failed:", error);
-                alert("Failed to create product. Please try again.");
-            });
-            return; // Don't proceed to close immediately
+            if (productImages.length === 0) {
+                alert("Please upload at least one product image.");
+                return;
+            }
         } else {
-            // Edit mode validation
             if (!description.trim() || description.length < 6) {
                 alert("Description must be at least 6 characters.");
                 return;
@@ -151,34 +122,53 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 alert("Quantity must be 0 or greater.");
                 return;
             }
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            // Get primary image URL and gallery URLs
+            const primaryImage = productImages.find(img => img.isPrimary);
+            const primaryImageUrl = primaryImage ? primaryImage.url : productImages[0].url;
+            const galleryUrls = productImages.map(img => img.url);
 
             const productData = {
-                productName: product.productName, // Include productName to pass validation
-                brand: product.brand, // Include brand to pass validation
+                productName: isEditMode ? product.productName : productName,
+                brand: isEditMode ? product.brand : brand,
                 description,
                 price: Number(price),
                 discount: Number(discount),
                 quantity: Number(quantity),
                 specialPrice: Number(specialPrice.toFixed(2)),
                 featured: featured,
+                primaryImage: primaryImageUrl,
+                images: galleryUrls,
             };
 
-            dispatch(
-                updateProduct(
+            if (isEditMode) {
+                await dispatch(updateProduct(
                     product.productId,
                     productData,
-                    images,
-                    existingImages
-                )
-            ).then(() => {
-                onClose();
-            }).catch((error) => {
-                console.error("Update failed:", error);
-                alert("Failed to update product. Please try again.");
-            });
+                    [],
+                    galleryUrls
+                ));
+            } else {
+                await dispatch(createProduct(
+                    productData,
+                    [],
+                    microCategory,
+                    sellerId
+                ));
+            }
+
+            onClose();
+        } catch (error) {
+            console.error("Failed to save product:", error);
+            alert("Failed to save product. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
-
 
     return (
         <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-sm border">
@@ -214,7 +204,6 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                         </div>
 
                         {/* Sub Category */}
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Sub Category</label>
                             <select
@@ -232,7 +221,6 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                         </div>
 
                         {/* Micro Category */}
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">Micro Category</label>
                             <select
@@ -290,8 +278,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    {/* Product Name - Read only in edit mode */}
+                    {/* Product Name */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Product Name</label>
                         <input
@@ -305,7 +292,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                         {isEditMode && <p className="text-xs text-gray-500 mt-1">Product name cannot be changed</p>}
                     </div>
 
-                    {/* Brand - Read only in edit mode */}
+                    {/* Brand */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1.5">Brand</label>
                         <input
@@ -374,7 +361,6 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                             Mark as Featured Product
                         </label>
                     </div>
-
                 </div>
 
                 {/* Special Price Preview */}
@@ -400,8 +386,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 </div>
             </section>
 
-
-            {/* 3. Product Media */}
+            {/* 3. Product Media - NEW Cloudinary Integration */}
             <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <span className={`w-8 h-8 rounded-full ${isEditMode ? "bg-blue-600" : "bg-blue-600"} text-white flex items-center justify-center text-sm font-bold`}>
@@ -410,114 +395,61 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                     Product Media
                 </h2>
 
-                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-                    {images.length === 0 && existingImages.length === 0 ? (
-                        <>
-                            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                            <p className="text-gray-700 font-medium mb-1">Drag & drop product images here</p>
-                            <p className="text-sm text-gray-500 mb-4">or</p>
-                            <label className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700">
-                                Browse Files
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className="hidden"
-                                />
-                            </label>
-                        </>
-                    ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                            {/* Existing Images (in edit mode) */}
-                            {existingImages.map((imageUrl, index) => (
-                                <div key={`existing-${index}`} className="relative group">
-                                    <img
-                                        src={imageUrl}
-                                        alt={`existing-${index}`}
-                                        className="w-full h-40 object-cover rounded-lg border"
-                                    />
-                                    <button
-                                        onClick={() => removeImage(index, true)}
-                                        className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center"
-                                    >
-                                        ×
-                                    </button>
-                                    {index === 0 && (
-                                        <span className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                                            Primary
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
-                            
-                            {/* New Images */}
-                            {images.map((file, index) => (
-                                <div key={`new-${index}`} className="relative group">
-                                    <img
-                                        src={URL.createObjectURL(file)}
-                                        alt={`preview-${index}`}
-                                        className="w-full h-40 object-cover rounded-lg border"
-                                    />
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm text-blue-800">
+                        <strong>Cloudinary Integration Active:</strong> Images are uploaded directly to Cloudinary CDN for fast delivery and automatic optimization (WebP format, responsive sizes).
+                    </p>
+                </div>
 
-                                    <button
-                                        onClick={() => removeImage(index, false)}
-                                        className="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center"
-                                    >
-                                        ×
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-1 rounded">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
+                <ImageUploader 
+                    onImagesUploaded={handleImagesUploaded}
+                    maxImages={5}
+                    folder={isEditMode ? `products/${product.productId}` : 'products/new'}
+                    existingImages={productImages}
+                />
 
-                            <label className="h-40 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400">
-                                <span className="text-gray-500">+ Add more</span>
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleImageChange}
-                                    className="hidden"
-                                />
-                            </label>
-                        </div>
-                    )}
-
-                    <div className="mt-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
-                        <ul className="list-disc list-inside space-y-1.5 text-left max-w-xl mx-auto">
-                            <li>Images must be clear, well-lit</li>
-                            <li>Images should not contain any text, watermark, or logo</li>
-                            <li>Maximum 9 images (recommended 5–8)</li>
-                            <li>Show product from different angles</li>
-                            <li>Minimum resolution: 1000×1000 pixels</li>
-                        </ul>
-                    </div>
+                <div className="mt-6 text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+                    <ul className="list-disc list-inside space-y-1.5">
+                        <li>Images are automatically optimized and converted to WebP format</li>
+                        <li>Maximum 5 images per product</li>
+                        <li>First image is automatically set as primary</li>
+                        <li>Supported formats: JPG, PNG, WEBP</li>
+                        <li>Maximum file size: 5MB per image</li>
+                    </ul>
                 </div>
             </section>
 
             {/* Footer Actions */}
             <div className="flex items-center justify-between pt-6 border-t">
                 <div className="text-sm text-gray-500">
-                    <span className="font-medium">0</span> / 5000 characters •{' '}
-                    <span className="font-medium">₹ {price}</span>
+                    <span className="font-medium">{productImages.length}</span> images uploaded •{' '}
+                    <span className="font-medium">₹ {price || 0}</span>
                 </div>
 
                 <div className="flex gap-4">
                     <button
                         className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
                         onClick={onClose}
+                        disabled={isSubmitting}
                     >
                         Cancel
                     </button>
-                    <button onClick={handlePublish}
-                        className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium cursor-pointer">
-                        {isEditMode ? "Update Product" : "Publish Product"}
+                    <button 
+                        onClick={handlePublish}
+                        disabled={isSubmitting}
+                        className="px-8 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSubmitting ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                                </svg>
+                                Saving...
+                            </span>
+                        ) : (
+                            isEditMode ? "Update Product" : "Publish Product"
+                        )}
                     </button>
                 </div>
             </div>

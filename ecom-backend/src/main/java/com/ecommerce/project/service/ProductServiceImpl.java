@@ -66,15 +66,16 @@ public class ProductServiceImpl implements ProductService{
 
 
     @Override
-    @Transactional  // Add this to ensure the entire operation (including cascaded saves) is transactional
+    @Transactional
     public ProductDTO createProduct(
             ProductDTO productDTO,
             Long categoryId,
             Long sellerId,
-            List<MultipartFile> images
+            List<String> imageUrls
     ) throws IOException {
 
-        System.out.println("Product DTO received: " + productDTO);  // Add logging for debugging
+        System.out.println("Product DTO received: " + productDTO);
+        System.out.println("Image URLs received: " + imageUrls);
 
         User seller = userRepository.findById(sellerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User","userId",sellerId));
@@ -111,17 +112,18 @@ public class ProductServiceImpl implements ProductService{
 
         Product savedProduct = productRepository.save(product);
 
-        // 🔥 IMAGE HANDLING
+        // 🔥 CLOUDINARY IMAGE HANDLING - Store URLs directly
         List<ProductImage> imageEntities = new ArrayList<>();
         int position = 1;
 
-        for (MultipartFile file : images) {
-            String fileName = fileService.uploadImage(path, file);
+        // Use provided imageUrls or fall back to DTO images
+        List<String> urlsToSave = (imageUrls != null && !imageUrls.isEmpty()) 
+            ? imageUrls 
+            : (productDTO.getImages() != null ? productDTO.getImages() : new ArrayList<>());
 
-            System.out.println("Uploaded image file: " + fileName);  // Add logging for debugging
-
+        for (String imageUrl : urlsToSave) {
             ProductImage image = new ProductImage();
-            image.setImageUrl(fileName);
+            image.setImageUrl(imageUrl);
             image.setPrimaryImage(position == 1); // first image is primary
             image.setPosition(position++);
             image.setProduct(savedProduct);
@@ -130,9 +132,9 @@ public class ProductServiceImpl implements ProductService{
         }
 
         savedProduct.setImages(imageEntities);
-        Product finalSavedProduct = productRepository.save(savedProduct);  // Re-save to ensure cascade
+        Product finalSavedProduct = productRepository.save(savedProduct);
 
-        System.out.println("Saved product with " + imageEntities.size() + " images");  // Add logging
+        System.out.println("Saved product with " + imageEntities.size() + " images");
 
         // Map to DTO
         ProductDTO response = modelMapper.map(finalSavedProduct, ProductDTO.class);
@@ -152,6 +154,7 @@ public class ProductServiceImpl implements ProductService{
 
         return response;
     }
+
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductsBySeller(
@@ -176,15 +179,15 @@ public class ProductServiceImpl implements ProductService{
 
                     ProductDTO dto = modelMapper.map(product, ProductDTO.class);
 
-                    // 🔥 Fetch images
+                    // 🔥 Fetch images - Cloudinary URLs stored directly
                     List<ProductImage> images = product.getImages();
 
                     if (images != null && !images.isEmpty()) {
 
-                        // All images
+                        // All images (Cloudinary URLs stored directly)
                         dto.setImages(
                                 images.stream()
-                                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                        .map(ProductImage::getImageUrl)
                                         .toList()
                         );
 
@@ -192,7 +195,7 @@ public class ProductServiceImpl implements ProductService{
                         dto.setPrimaryImage(
                                 images.stream()
                                         .filter(ProductImage::isPrimaryImage)
-                                        .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                        .map(ProductImage::getImageUrl)
                                         .findFirst()
                                         .orElse(null)
                         );
@@ -217,7 +220,6 @@ public class ProductServiceImpl implements ProductService{
     }
 
 
-
     @Override
     public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
@@ -231,7 +233,6 @@ public class ProductServiceImpl implements ProductService{
         List<ProductDTO> productDTOS = products.stream()
                 .map(product ->{
                     ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
-//                    productDTO.setImage(imageUtils.constructImageUrl(product.getImage()));
                     return productDTO;
                 })
                 .toList();
@@ -245,6 +246,7 @@ public class ProductServiceImpl implements ProductService{
         productResponse.setLastPage(pageProduct.isLast());
         return productResponse;
     }
+    
     @Override
     public ProductResponse getFilterProduct(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String category, Integer rating, Double minPrice, Double maxPrice, Boolean featured, Boolean bestSeller) {
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
@@ -259,10 +261,10 @@ public class ProductServiceImpl implements ProductService{
                 .map(product ->{
                     ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
                     
-                    // Map images to URLs
+                    // Map images to URLs - Cloudinary URLs stored directly
                     if (product.getImages() != null && !product.getImages().isEmpty()) {
                         List<String> imageUrls = product.getImages().stream()
-                                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                                .map(ProductImage::getImageUrl)
                                 .collect(Collectors.toList());
                         productDTO.setImages(imageUrls);
                         
@@ -271,7 +273,7 @@ public class ProductServiceImpl implements ProductService{
                                 .filter(ProductImage::isPrimaryImage)
                                 .findFirst()
                                 .orElse(product.getImages().get(0));
-                        productDTO.setPrimaryImage(imageUtils.constructImageUrl(primaryImg.getImageUrl()));
+                        productDTO.setPrimaryImage(primaryImg.getImageUrl());
                     }
                     
                     return productDTO;
@@ -397,8 +399,6 @@ public class ProductServiceImpl implements ProductService{
         // Get the file name of uploaded image
         String fileName = fileService.uploadImage(path,image);
 
-        // Updating the new file name to the product
-//        productFormDB.setImage(fileName);
         // Save updated product
         Product updatedProduct = productRepository.save(productFormDB);
         // return DTO after mapping product to DTO
@@ -428,10 +428,10 @@ public class ProductServiceImpl implements ProductService{
     @Override
     @Transactional
     public ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO, 
-                                          List<MultipartFile> newImages, List<String> existingImages) throws IOException {
+                                          List<String> newImageUrls, List<String> existingImages) throws IOException {
         System.out.println("=== UPDATE PRODUCT DEBUG ===");
         System.out.println("ProductId: " + productId);
-        System.out.println("New images count: " + (newImages != null ? newImages.size() : 0));
+        System.out.println("New image URLs count: " + (newImageUrls != null ? newImageUrls.size() : 0));
         System.out.println("Existing images count: " + (existingImages != null ? existingImages.size() : 0));
         
         // Find the product
@@ -454,53 +454,34 @@ public class ProductServiceImpl implements ProductService{
         
         System.out.println("Updated fields - Price: " + productDTO.getPrice() + ", New Qty: " + productDTO.getQuantity());
         
-        // Handle images
-        List<ProductImage> currentImages = new ArrayList<>(product.getImages());
-        
-        // Extract just filenames from full URLs in existingImages
-        List<String> existingImageFileNames = existingImages.stream()
-                .map(url -> {
-                    // Extract filename from full URL (e.g., http://localhost:8080/images/abc.jpg -> abc.jpg)
-                    int lastSlash = url.lastIndexOf('/');
-                    return lastSlash >= 0 ? url.substring(lastSlash + 1) : url;
-                })
-                .collect(Collectors.toList());
-        
-        System.out.println("Extracted filenames to keep: " + existingImageFileNames);
-        
-        // Remove images that are not in existingImages list
-        List<ProductImage> imagesToRemove = currentImages.stream()
-                .filter(img -> !existingImageFileNames.contains(img.getImageUrl()))
-                .collect(Collectors.toList());
-        
-        for (ProductImage img : imagesToRemove) {
-            product.getImages().remove(img);
-            productImageRepository.delete(img);
-            // Optionally delete file from disk
-            // fileService.deleteImage(path, img.getImageUrl());
-        }
-        
-        // Add new images
-        if (newImages != null && !newImages.isEmpty()) {
-            int startPosition = product.getImages().size() + 1;
-            for (int i = 0; i < newImages.size(); i++) {
-                MultipartFile file = newImages.get(i);
-                String fileName = fileService.uploadImage(path, file);
-                
+        // 🔥 CLOUDINARY IMAGE HANDLING
+        // Clear existing images and add all new ones
+        if ((newImageUrls != null && !newImageUrls.isEmpty()) || 
+            (existingImages != null && !existingImages.isEmpty())) {
+            
+            // Delete old images from database
+            productImageRepository.deleteAll(product.getImages());
+            product.getImages().clear();
+
+            // Add all images (they are already Cloudinary URLs)
+            List<String> allImages = new ArrayList<>();
+            if (existingImages != null) {
+                allImages.addAll(existingImages);
+            }
+            if (newImageUrls != null) {
+                allImages.addAll(newImageUrls);
+            }
+
+            int position = 1;
+            for (String imageUrl : allImages) {
                 ProductImage image = new ProductImage();
-                image.setImageUrl(fileName);
-                image.setPrimaryImage(startPosition + i == 1 && product.getImages().isEmpty()); // Primary if first image
-                image.setPosition(startPosition + i);
+                image.setImageUrl(imageUrl);
+                image.setPrimaryImage(position == 1); // First image is primary
+                image.setPosition(position++);
                 image.setProduct(product);
                 
                 product.getImages().add(image);
             }
-        }
-        
-        // If no primary image exists, set the first one as primary
-        boolean hasPrimary = product.getImages().stream().anyMatch(ProductImage::isPrimaryImage);
-        if (!hasPrimary && !product.getImages().isEmpty()) {
-            product.getImages().get(0).setPrimaryImage(true);
         }
         
         Product updatedProduct = productRepository.save(product);
@@ -534,16 +515,16 @@ public class ProductServiceImpl implements ProductService{
             response.setBrand(updatedProduct.getBrand());
         }
         
-        // Handle images
+        // Handle images - Cloudinary URLs stored directly
         List<String> imageUrls = updatedProduct.getImages().stream()
-                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                .map(ProductImage::getImageUrl)
                 .collect(Collectors.toList());
         response.setImages(imageUrls);
         
         // Set primary image
         String primaryImage = updatedProduct.getImages().stream()
                 .filter(ProductImage::isPrimaryImage)
-                .map(img -> imageUtils.constructImageUrl(img.getImageUrl()))
+                .map(ProductImage::getImageUrl)
                 .findFirst()
                 .orElse(null);
         response.setPrimaryImage(primaryImage);
@@ -561,8 +542,6 @@ public class ProductServiceImpl implements ProductService{
         List<ProductImage> images = product.getImages();
         for (ProductImage image : images) {
             productImageRepository.delete(image);
-            // Optionally delete the image file from disk
-            // fileService.deleteImage(path, image.getImageUrl());
         }
         
         // Delete the product

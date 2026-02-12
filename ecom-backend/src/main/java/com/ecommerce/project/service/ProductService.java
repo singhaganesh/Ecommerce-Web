@@ -9,7 +9,6 @@ import java.util.List;
 
 public interface ProductService {
 
-
     ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
     ProductResponse searchProductByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
@@ -24,11 +23,13 @@ public interface ProductService {
 
     ProductResponse getFilterProduct(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String category, Integer rating, Double minPrice, Double maxPrice, Boolean featured, Boolean bestSeller);
 
-    ProductDTO createProduct(ProductDTO productDTO, Long categoryId, Long sellerId, List<MultipartFile> images) throws IOException;
+    // Updated to accept image URLs instead of MultipartFile for Cloudinary integration
+    ProductDTO createProduct(ProductDTO productDTO, Long categoryId, Long sellerId, List<String> imageUrls) throws IOException;
 
     ProductResponse getProductsBySeller(Long sellerId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder);
 
     java.util.Map<String, Object> getSellerProductStatistics(Long sellerId);
 
-    ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO, List<MultipartFile> newImages, List<String> existingImages) throws IOException;
+    // Updated to accept image URLs for Cloudinary integration
+    ProductDTO updateSellerProduct(Long productId, ProductDTO productDTO, List<String> newImageUrls, List<String> existingImages) throws IOException;
 }

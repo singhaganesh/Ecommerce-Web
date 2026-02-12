@@ -57,24 +57,15 @@ export const createProduct = (
   try {
     dispatch({ type: "CREATE_PRODUCT_REQUEST" });
 
-    const formData = new FormData();
-
-    // 🔹 product JSON
-    formData.append(
-      "product",
-      new Blob([JSON.stringify(productData)], {
-        type: "application/json",
-      })
-    );
-
-    // 🔹 images
-    images.forEach((file) => {
-      formData.append("images", file);
-    });
-
+    // Send JSON directly - images are already Cloudinary URLs in productData.images
     const { data } = await api.post(
       `/seller/categories/${categoryId}/${sellerId}/product`,
-      formData
+      productData,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
 
     dispatch({
@@ -158,32 +149,14 @@ export const updateProduct = (productId, productData, newImages, existingImages)
     dispatch({ type: "UPDATE_PRODUCT_REQUEST" });
 
     console.log("Updating product:", productId, productData);
-    console.log("New images:", newImages?.length || 0);
-    console.log("Existing images:", existingImages);
+    console.log("Images:", productData.images);
 
-    const formData = new FormData();
-
-    // Append product JSON
-    formData.append(
-      "product",
-      new Blob([JSON.stringify(productData)], {
-        type: "application/json",
-      })
-    );
-
-    // Append existing images to keep (as simple string)
-    if (existingImages && existingImages.length > 0) {
-      formData.append("existingImages", JSON.stringify(existingImages));
-    }
-
-    // Append new images
-    if (newImages && newImages.length > 0) {
-      newImages.forEach((file) => {
-        formData.append("images", file);
-      });
-    }
-
-    const { data } = await api.put(`/seller/products/${productId}`, formData);
+    // Send JSON directly - images are Cloudinary URLs in productData.images
+    const { data } = await api.put(`/seller/products/${productId}`, productData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
     
     console.log("Update response:", data);
 
