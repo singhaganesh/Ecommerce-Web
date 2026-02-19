@@ -48,7 +48,6 @@ public class ProductDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-
     // 🔹 Required for category mapping (MICRO category only)
-//    private Long categoryId;
+    private Long categoryId;
 }
