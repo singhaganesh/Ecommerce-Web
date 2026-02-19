@@ -2,9 +2,9 @@ import { useState, useCallback, useEffect } from 'react';
 import { FaCloudUploadAlt, FaTimes, FaSpinner } from 'react-icons/fa';
 import { uploadImageToCloudinary } from '../utils/cloudinary';
 
-const ImageUploader = ({ 
-  onImagesUploaded, 
-  maxImages = 5, 
+const ImageUploader = ({
+  onImagesUploaded,
+  maxImages = 5,
   folder = '',
   existingImages = []
 }) => {
@@ -51,7 +51,7 @@ const ImageUploader = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFiles(e.dataTransfer.files);
     }
@@ -71,7 +71,7 @@ const ImageUploader = ({
     }
 
     const filesToUpload = Array.from(files).slice(0, remainingSlots);
-    
+
     // Step 1: Create local previews for all files first
     const newImagesWithPreviews = filesToUpload.map((file, i) => {
       const localPreviewUrl = URL.createObjectURL(file);
@@ -87,24 +87,35 @@ const ImageUploader = ({
     });
 
     // Step 2: Show local previews immediately
-    const updatedImages = [...images, ...newImagesWithPreviews];
-    setImages(updatedImages);
-    setUploading(true);
+    // Append new images to the existing list
+    setImages(prevImages => [...prevImages, ...newImagesWithPreviews]);
+    setUploading(true); // Global uploading state (optional, can be removed if not used)
 
     // Step 3: Upload each file to Cloudinary
+    // We process uploads sequentially to avoid updating state concurrently in a way that might cause race conditions
+    // or we can use Promise.all if we are careful with state updates. 
+    // Here we iterate and update state for each completion.
+
+    // We need to know the starting index for these new images in the master 'images' array
+    // However, 'images' state might not be updated yet inside this loop if we used functional update above.
+    // So we'll maintain a reference to the index relative to the *current* batch.
+
+    const baseIndex = images.length; // The index where the first new image was added
+
     for (let i = 0; i < filesToUpload.length; i++) {
       const file = filesToUpload[i];
-      const targetIndex = images.length + i;
+      // The index of this image in the global 'images' state array (presuming no other updates happened)
+      const targetIndex = baseIndex + i;
       const localUrl = newImagesWithPreviews[i].localUrl;
 
       try {
         const result = await uploadImageToCloudinary(file, folder);
 
-        if (result.success) {
-          // Update state with Cloudinary URL
-          setImages(prev => {
-            const updated = prev.map((img, idx) => {
-              if (idx === targetIndex) {
+        // Update state based on result
+        setImages(prev => {
+          return prev.map((img, idx) => {
+            if (idx === targetIndex) {
+              if (result.success) {
                 return {
                   ...img,
                   url: result.url,
@@ -112,30 +123,37 @@ const ImageUploader = ({
                   uploading: false,
                   error: null
                 };
+              } else {
+                return {
+                  ...img,
+                  uploading: false,
+                  error: result.error || 'Upload failed'
+                };
               }
-              return img;
-            });
-            return updated;
+            }
+            return img;
           });
-          // Clean up blob URL after successful upload
+        });
+
+        if (result.success) {
+          // Clean up blob URL after successful upload to free memory
           URL.revokeObjectURL(localUrl);
-        } else {
-          throw new Error(result.error || 'Upload failed');
         }
+
       } catch (error) {
-        // Mark as error but keep local preview
+        // This catch block handles unexpected errors in the logic above
+        console.error("Critical upload error:", error);
         setImages(prev => {
-          const updated = prev.map((img, idx) => {
+          return prev.map((img, idx) => {
             if (idx === targetIndex) {
               return {
                 ...img,
                 uploading: false,
-                error: error.message
+                error: "Unexpected upload error"
               };
             }
             return img;
           });
-          return updated;
         });
       }
     }
@@ -149,14 +167,14 @@ const ImageUploader = ({
     if (imageToRemove.localUrl && imageToRemove.localUrl.startsWith('blob:')) {
       URL.revokeObjectURL(imageToRemove.localUrl);
     }
-    
+
     const updatedImages = images.filter((_, i) => i !== index);
-    
+
     // If we removed the primary image, set the first remaining as primary
     if (images[index].isPrimary && updatedImages.length > 0) {
       updatedImages[0].isPrimary = true;
     }
-    
+
     setImages(updatedImages);
     onImagesUploaded(updatedImages);
   };
@@ -175,11 +193,10 @@ const ImageUploader = ({
       {/* Upload Area */}
       {images.length < maxImages && (
         <div
-          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
-            dragActive 
-              ? 'border-blue-500 bg-blue-50' 
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-          }`}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${dragActive
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -195,13 +212,13 @@ const ImageUploader = ({
             onChange={handleFileInput}
             disabled={uploading}
           />
-          
+
           <FaCloudUploadAlt className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          
+
           <p className="text-lg font-medium text-gray-700 mb-2">
             {uploading ? 'Uploading...' : 'Drop images here or click to upload'}
           </p>
-          
+
           <p className="text-sm text-gray-500">
             PNG, JPG, WEBP up to 5MB ({images.length}/{maxImages} images)
           </p>
@@ -218,11 +235,10 @@ const ImageUploader = ({
       {images.length > 0 && (
         <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {images.map((image, index) => (
-            <div 
-              key={index} 
-              className={`relative group rounded-lg overflow-hidden border-2 ${
-                image.isPrimary ? 'border-blue-500' : 'border-gray-200'
-              }`}
+            <div
+              key={index}
+              className={`relative group rounded-lg overflow-hidden border-2 ${image.isPrimary ? 'border-blue-500' : 'border-gray-200'
+                }`}
             >
               {/* Image Display - Show local preview or Cloudinary URL */}
               <div className="w-full h-32 bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200 rounded-t-lg">
@@ -236,20 +252,20 @@ const ImageUploader = ({
                   <span className="text-gray-400 text-xs text-center px-2">Loading...</span>
                 )}
               </div>
-               
+
               {/* Upload Progress Overlay */}
               {image.uploading && (
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="flex flex-col items-center">
                     <FaSpinner className="animate-spin text-white h-6 w-6 mb-1" />
                     <span className="text-white text-xs">Uploading...</span>
                   </div>
                 </div>
               )}
-               
+
               {/* Error Overlay */}
               {image.error && (
-                <div className="absolute inset-0 bg-red-500 bg-opacity-70 flex items-center justify-center">
+                <div className="absolute inset-0 bg-red-500/70 flex items-center justify-center">
                   <div className="flex flex-col items-center">
                     <span className="text-white text-xs text-center px-2">Upload failed</span>
                     <span className="text-white text-xs mt-1">{image.error}</span>
@@ -258,7 +274,7 @@ const ImageUploader = ({
               )}
 
               {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200">
                 {/* Remove Button */}
                 <button
                   onClick={(e) => {
@@ -298,8 +314,8 @@ const ImageUploader = ({
       {/* Helper Text */}
       {images.length > 0 && (
         <p className="mt-4 text-sm text-gray-500 text-center">
-          {images.length < maxImages 
-            ? `You can upload ${maxImages - images.length} more image${maxImages - images.length !== 1 ? 's' : ''}` 
+          {images.length < maxImages
+            ? `You can upload ${maxImages - images.length} more image${maxImages - images.length !== 1 ? 's' : ''}`
             : `Maximum ${maxImages} images reached. Delete an image to upload more.`}
         </p>
       )}

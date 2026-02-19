@@ -22,13 +22,29 @@ export const uploadImageToCloudinary = async (file, folder = '') => {
   }
 
   try {
+    // Add a timeout to the fetch request (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
     const response = await fetch(CLOUDINARY_CONFIG.apiUrl, {
       method: 'POST',
       body: formData,
+      signal: controller.signal
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status}`);
+        let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+        try {
+            const errorData = await response.json();
+            if (errorData.error && errorData.error.message) {
+                errorMessage = errorData.error.message;
+            }
+        } catch (e) {
+            // ignore JSON parsing error
+        }
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -44,9 +60,13 @@ export const uploadImageToCloudinary = async (file, folder = '') => {
     };
   } catch (error) {
     console.error('Cloudinary upload error:', error);
+    let errorMsg = error.message;
+    if (error.name === 'AbortError') {
+        errorMsg = "Upload timed out. Please check your internet connection.";
+    }
     return {
       success: false,
-      error: error.message
+      error: errorMsg
     };
   }
 };
