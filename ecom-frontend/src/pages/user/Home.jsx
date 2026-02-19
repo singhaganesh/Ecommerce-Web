@@ -3,8 +3,22 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories, fetchFilteredProducts } from "../../store/actions";
 import ProductCard from "../../components/ProductCard";
-import CategoryCard from "../../components/CategoryCard";
+import { CategoryCard } from "../../components/CategoryCard";
 import { useAuth } from "../../context/AuthContext";
+
+// Import local category images
+import electronicsImg from "../../assets/CategoryImages/Electronics.jpg";
+import fashionImg from "../../assets/CategoryImages/Fashion.jpg";
+import homeImg from "../../assets/CategoryImages/Home & Living.jpg";
+import sportsImg from "../../assets/CategoryImages/Sports & Fitness.jpg";
+import { Link } from "react-router-dom";
+
+const categoryImages = {
+  1: electronicsImg,
+  2: fashionImg,
+  3: homeImg,
+  4: sportsImg
+};
 
 const defaultCategories = [
   { categoryId: 1, categoryName: "Electronics", productCount: 15 },
@@ -18,7 +32,7 @@ export default function Home() {
   const { categories } = useSelector((state) => state.category);
   const { user, isAuthenticated } = useAuth();
   const dispatch = useDispatch();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -39,7 +53,7 @@ export default function Home() {
   }, [dispatch]);
 
   const displayCategories = dataLoaded && categories && categories.length > 0 ? categories.slice(0, 4) : defaultCategories;
-  const displayProducts = featuredProduct && featuredProduct.length > 0 ? featuredProduct.filter(item => item.featured === true).slice(0, 10) : [];
+  const displayProducts = featuredProduct && featuredProduct.length > 0 ? featuredProduct.slice(0, 10) : [];
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -81,8 +95,8 @@ export default function Home() {
       </div>
 
       {/* Categories Section */}
-      <section className="py-12 px-4 md:px-8 lg:px-12 bg-white">
-        <div className="max-w-full">
+      <section className="py-12 px-4 md:px-6 lg:px-8 bg-white">
+        <div className="max-w-[1400px] mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-4xl font-bold text-gray-900 mb-3">Shop by Category</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -90,15 +104,28 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-7xl mx-auto">
-            {displayCategories.map((item) => (
-              <CategoryCard 
-                key={item.categoryId} 
-                categoryId={item.categoryId}
-                categoryName={item.categoryName}
-                productCount={item.productCount}
-              />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {displayCategories.map((cat) => {
+              // Logic to determine image source (prioritizing local images as requested)
+              const hasBackendImage = cat.image && !cat.image.includes("default.png");
+              const imageSrc = categoryImages[cat.categoryId] || (hasBackendImage ? cat.image : "https://images.unsplash.com/photo-1557683316-973673baf926?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JhZGllbnR8ZW58MHx8MHx8fDA%3D");
+
+              return (
+                <Link to={`/search?category=${cat.categoryId}`} key={cat.categoryId}>
+                  <CategoryCard className="flex flex-col items-start justify-end py-8 px-6">
+                    <img
+                      className="h-full w-full absolute inset-0 object-cover opacity-80 transition-opacity group-hover:opacity-100"
+                      src={imageSrc}
+                      alt={cat.categoryName}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                    <div className="relative z-10 w-full">
+                      <p className="font-bold text-white text-2xl">{cat.categoryName}</p>
+                    </div>
+                  </CategoryCard>
+                </Link>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -120,9 +147,9 @@ export default function Home() {
           ) : displayProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
               {displayProducts.map((item) => (
-                <ProductCard 
-                  key={item.productId} 
-                  {...item} 
+                <ProductCard
+                  key={item.productId}
+                  {...item}
                   pageFrom="HOME"
                 />
               ))}
