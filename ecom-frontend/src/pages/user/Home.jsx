@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories, fetchFilteredProducts } from "../../store/actions";
 import ProductCard from "../../components/ProductCard";
 import { CategoryCard } from "../../components/CategoryCard";
+import HeroSection from "../../components/HeroSection";
 import { useAuth } from "../../context/AuthContext";
 
 // Import local category images
@@ -58,41 +59,8 @@ export default function Home() {
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
-        <Container>
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div>
-              {isAuthenticated() ? (
-                <>
-                  <h1 className="text-5xl font-bold mb-4">
-                    Welcome back, {user?.userName || 'User'}!
-                  </h1>
-                  <p className="text-xl mb-6">
-                    Continue shopping and explore our latest deals.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h1 className="text-5xl font-bold mb-4">
-                    Best Deals on Your Favorite Products
-                  </h1>
-                  <p className="text-xl mb-6">
-                    Shop electronics, fashion, home essentials and more.
-                  </p>
-                </>
-              )}
-              <button className="bg-white text-indigo-600 px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:bg-gray-100 transition">
-                Shop Now
-              </button>
-            </div>
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/1170/1170678.png"
-              alt="shopping"
-              className="w-80 mt-8 md:mt-0"
-            />
-          </div>
-        </Container>
-      </div>
+      {/* Hero Section */}
+      <HeroSection />
 
       {/* Categories Section */}
       <section className="py-12 px-4 md:px-6 lg:px-8 bg-white">
