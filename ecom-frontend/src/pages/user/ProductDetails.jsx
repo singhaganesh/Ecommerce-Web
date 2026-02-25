@@ -88,9 +88,9 @@ export default function ProductDetails() {
 
   const allImages = [...new Set(rawImages)];
 
-  // 🔹 Select Template based on key words in Category Name
+  // 🔹 Select Template based on key words in Category Type
   const renderTemplate = () => {
-    const category = (product.categoryName || "").toLowerCase();
+    const category = (product.categoryType || product.categoryName || "").toLowerCase();
 
     // Flexible matching for Fashion
     if (["fashion", "clothing", "shirt", "pant", "dress", "shoe", "wear", "jean"].some(k => category.includes(k))) {

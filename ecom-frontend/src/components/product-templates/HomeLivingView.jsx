@@ -1,31 +1,23 @@
-import { FaHeart, FaShoppingCart, FaStar, FaRegStar, FaRulerCombined, FaBoxOpen } from "react-icons/fa";
+import { FaHeart, FaRulerCombined, FaBoxOpen } from "react-icons/fa";
+import ImageGallery from "../product-shared/ImageGallery";
+import RatingsReviews from "../product-shared/RatingsReviews";
+import PriceSection from "../product-shared/PriceSection";
+import AddToCartSection from "../product-shared/AddToCartSection";
 
 export default function HomeLivingView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
     return (
         <div className="space-y-12">
             {/* Wide Hero Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Main Image - Wide */}
-                <div className="lg:col-span-8 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
-                    <img
-                        src={allImages[selectedImage]}
-                        alt={product.productName}
-                        className="w-full h-[500px] object-cover"
+                <div className="lg:col-span-9">
+                    <ImageGallery
+                        allImages={allImages}
+                        selectedImage={selectedImage}
+                        setSelectedImage={setSelectedImage}
+                        productName={product.productName}
+                        discount={product.discount}
+                        layout="vertical"
                     />
-                </div>
-
-                {/* Thumbnail Strip (Vertical) */}
-                <div className="lg:col-span-1 hidden lg:flex flex-col gap-3 h-[500px] overflow-y-auto scrollbar-hide">
-                    {allImages.map((img, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setSelectedImage(index)}
-                            className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-all
-                        ${selectedImage === index ? "border-gray-800" : "border-transparent opacity-60 hover:opacity-100"}`}
-                        >
-                            <img src={img} alt="" className="w-full h-full object-cover" />
-                        </button>
-                    ))}
                 </div>
 
                 {/* Sticky Summary Info */}
@@ -33,36 +25,23 @@ export default function HomeLivingView({ product, allImages, selectedImage, setS
                     <div>
                         <p className="text-sm font-bold tracking-widest text-gray-400 uppercase mb-2">{product.categoryName}</p>
                         <h1 className="text-3xl font-serif text-gray-900">{product.productName}</h1>
+                        <RatingsReviews rating={product.rating} reviewCount={product.reviewCount} />
                     </div>
 
                     <div className="py-4 border-t border-b border-gray-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-3xl font-medium text-gray-900">₹{Number(product.specialPrice || product.price).toFixed(0)}</span>
-                            <div className="flex items-center gap-1 text-sm bg-gray-100 px-2 py-1 rounded">
-                                <FaStar className="text-yellow-500" /> {product.rating}
-                            </div>
-                        </div>
-                        <p className="text-gray-500 text-sm leading-relaxed line-clamp-4">
+                        <PriceSection price={product.price} specialPrice={product.specialPrice} />
+                        <p className="text-gray-500 text-sm leading-relaxed line-clamp-4 mt-4">
                             {product.description}
                         </p>
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center border border-gray-300 rounded-lg p-1">
-                            <button onClick={() => handleQuantityChange(-1)} disabled={quantity <= 1} className="p-3 hover:bg-gray-100 rounded">-</button>
-                            <span className="flex-1 text-center font-medium">{quantity}</span>
-                            <button onClick={() => handleQuantityChange(1)} disabled={quantity >= product.quantity} className="p-3 hover:bg-gray-100 rounded">+</button>
-                        </div>
-
-                        <button
-                            onClick={handleAddToCart}
-                            disabled={!isAvailable}
-                            className={`w-full py-4 rounded-lg font-bold text-white transition-colors
-                        ${isAvailable ? "bg-gray-900 hover:bg-gray-800" : "bg-gray-400 cursor-not-allowed"}`}
-                        >
-                            {isAvailable ? "Add to Cart" : "Out of Stock"}
-                        </button>
-                    </div>
+                    <AddToCartSection
+                        quantity={quantity}
+                        handleQuantityChange={handleQuantityChange}
+                        maxQuantity={product.quantity}
+                        handleAddToCart={handleAddToCart}
+                        isAvailable={isAvailable}
+                    />
                 </div>
             </div>
 

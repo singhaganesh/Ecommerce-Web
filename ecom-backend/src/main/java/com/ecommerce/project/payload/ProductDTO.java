@@ -31,6 +31,10 @@ public class ProductDTO {
     @Size(min = 6, message = "Product description must contain at least 6 characters")
     private String description;
 
+    private java.util.Map<String, Object> specifications;
+
+    private String categoryType;
+
     private Integer quantity;
     private double price;
     private double discount;

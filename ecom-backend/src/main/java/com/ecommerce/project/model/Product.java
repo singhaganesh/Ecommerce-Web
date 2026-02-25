@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Table(name = "products")
-@ToString(exclude = {"images", "category", "user", "cartItems"})
+@ToString(exclude = { "images", "category", "user", "cartItems" })
 public class Product {
 
     @Id
@@ -26,30 +26,30 @@ public class Product {
     @NotBlank(message = "Product name must not be empty")
     private String productName;
 
-    @OneToMany(
-            mappedBy = "product",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProductImage> images;
-    private String brand;                // Apple, Samsung, Nike etc
+    private String brand; // Apple, Samsung, Nike etc
 
     @Column(length = 1000)
     @Size(min = 6, message = "Product description must contain atleast 6 character")
     private String description;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private java.util.Map<String, Object> specifications;
 
     private Integer quantity;
     private double price;
     private double discount;
     private double specialPrice;
 
-    private Double rating;               // ⭐ 4.5
-    private Integer totalReviews;        // 1250 reviews
+    private Double rating; // ⭐ 4.5
+    private Integer totalReviews; // 1250 reviews
 
-    private Boolean featured;            // homepage featured
-    private Boolean active;              // enable/disable product
+    private Boolean featured; // homepage featured
+    private Boolean active; // enable/disable product
 
-    private Integer soldCount;           // analytics
+    private Integer soldCount; // analytics
     private boolean bestSeller;
 
     private LocalDateTime createdAt;

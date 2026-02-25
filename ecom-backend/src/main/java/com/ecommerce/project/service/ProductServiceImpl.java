@@ -140,6 +140,7 @@ public class ProductServiceImpl implements ProductService {
 
                 // Map to DTO
                 ProductDTO response = modelMapper.map(finalSavedProduct, ProductDTO.class);
+                response.setCategoryType(category.resolveCategoryType());
                 response.setImages(
                                 imageEntities.stream()
                                                 .map(ProductImage::getImageUrl)
@@ -178,6 +179,8 @@ public class ProductServiceImpl implements ProductService {
                                         ProductDTO dto = modelMapper.map(product, ProductDTO.class);
                                         if (product.getCategory() != null) {
                                                 dto.setCategoryId(product.getCategory().getCategoryId());
+                                                dto.setCategoryName(product.getCategory().getCategoryName());
+                                                dto.setCategoryType(product.getCategory().resolveCategoryType());
                                         }
 
                                         // 🔥 Fetch images - Cloudinary URLs stored directly
@@ -235,6 +238,7 @@ public class ProductServiceImpl implements ProductService {
                                         if (product.getCategory() != null) {
                                                 productDTO.setCategoryId(product.getCategory().getCategoryId());
                                                 productDTO.setCategoryName(product.getCategory().getCategoryName());
+                                                productDTO.setCategoryType(product.getCategory().resolveCategoryType());
                                         }
                                         return productDTO;
                                 })
@@ -271,6 +275,7 @@ public class ProductServiceImpl implements ProductService {
                                         if (product.getCategory() != null) {
                                                 productDTO.setCategoryId(product.getCategory().getCategoryId());
                                                 productDTO.setCategoryName(product.getCategory().getCategoryName());
+                                                productDTO.setCategoryType(product.getCategory().resolveCategoryType());
                                         }
 
                                         // Map images to URLs - Cloudinary URLs stored directly
@@ -324,6 +329,7 @@ public class ProductServiceImpl implements ProductService {
                                         if (product.getCategory() != null) {
                                                 dto.setCategoryId(product.getCategory().getCategoryId());
                                                 dto.setCategoryName(product.getCategory().getCategoryName());
+                                                dto.setCategoryType(product.getCategory().resolveCategoryType());
                                         }
                                         return dto;
                                 })
@@ -364,6 +370,7 @@ public class ProductServiceImpl implements ProductService {
                                         if (product.getCategory() != null) {
                                                 dto.setCategoryId(product.getCategory().getCategoryId());
                                                 dto.setCategoryName(product.getCategory().getCategoryName());
+                                                dto.setCategoryType(product.getCategory().resolveCategoryType());
                                         }
                                         return dto;
                                 })
@@ -543,6 +550,7 @@ public class ProductServiceImpl implements ProductService {
                 // Handle category
                 if (updatedProduct.getCategory() != null) {
                         response.setCategoryName(updatedProduct.getCategory().getCategoryName());
+                        response.setCategoryType(updatedProduct.getCategory().resolveCategoryType());
                         response.setCategoryId(updatedProduct.getCategory().getCategoryId());
                 }
 
@@ -596,6 +604,7 @@ public class ProductServiceImpl implements ProductService {
                 if (product.getCategory() != null) {
                         dto.setCategoryId(product.getCategory().getCategoryId());
                         dto.setCategoryName(product.getCategory().getCategoryName());
+                        dto.setCategoryType(product.getCategory().resolveCategoryType());
                 }
 
                 // Map Images

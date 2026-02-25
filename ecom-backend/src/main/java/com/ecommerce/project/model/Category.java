@@ -25,8 +25,8 @@ public class Category {
 
     private String image;
 
-    private Boolean active;       // enable/disable category
-    private Integer priority;     // display order on home page
+    private Boolean active; // enable/disable category
+    private Integer priority; // display order on home page
     private LocalDateTime createdAt;
 
     // 🔹 Parent Category (Self Reference)
@@ -42,4 +42,12 @@ public class Category {
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Product> products;
+
+    public String resolveCategoryType() {
+        Category current = this;
+        while (current.getParent() != null) {
+            current = current.getParent();
+        }
+        return current.getCategoryName();
+    }
 }
