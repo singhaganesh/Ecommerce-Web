@@ -3,6 +3,8 @@ import ImageGallery from "../product-shared/ImageGallery";
 import RatingsReviews from "../product-shared/RatingsReviews";
 import PriceSection from "../product-shared/PriceSection";
 import AddToCartSection from "../product-shared/AddToCartSection";
+import SpecificationsTable from "../product-shared/SpecificationsTable";
+import VariantSelector from "../product-shared/VariantSelector";
 
 export default function SportsFitnessView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
     return (
@@ -35,7 +37,13 @@ export default function SportsFitnessView({ product, allImages, selectedImage, s
                         {product.description}
                     </p>
 
-                    <div className="grid grid-cols-2 gap-4 mb-8">
+                    {/* Dynamic Size/Color Selector */}
+                    <VariantSelector
+                        specifications={product.specifications}
+                        categoryName={product.categoryName}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4 mb-8 mt-6">
                         <div className="bg-gray-50 col-span-2 p-4 rounded border-l-4 border-red-600">
                             <h4 className="font-bold flex items-center gap-2"><FaDumbbell className="text-red-600" /> Build Quality</h4>
                             <p className="text-sm text-gray-600 mt-1">Industrial grade materials designed for high intensity usage.</p>
@@ -54,6 +62,11 @@ export default function SportsFitnessView({ product, allImages, selectedImage, s
                         isAvailable={isAvailable}
                     />
                 </div>
+            </div>
+
+            {/* Dynamic Specifications */}
+            <div className="mt-12">
+                <SpecificationsTable specifications={product.specifications} title="Product Specifications" />
             </div>
         </div>
     );

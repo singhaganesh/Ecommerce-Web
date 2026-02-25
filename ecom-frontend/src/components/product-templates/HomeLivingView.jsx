@@ -3,6 +3,8 @@ import ImageGallery from "../product-shared/ImageGallery";
 import RatingsReviews from "../product-shared/RatingsReviews";
 import PriceSection from "../product-shared/PriceSection";
 import AddToCartSection from "../product-shared/AddToCartSection";
+import SpecificationsTable from "../product-shared/SpecificationsTable";
+import VariantSelector from "../product-shared/VariantSelector";
 
 export default function HomeLivingView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
     return (
@@ -35,6 +37,12 @@ export default function HomeLivingView({ product, allImages, selectedImage, setS
                         </p>
                     </div>
 
+                    {/* Color Variant if available */}
+                    <VariantSelector
+                        specifications={product.specifications}
+                        categoryName={product.categoryName}
+                    />
+
                     <AddToCartSection
                         quantity={quantity}
                         handleQuantityChange={handleQuantityChange}
@@ -45,6 +53,9 @@ export default function HomeLivingView({ product, allImages, selectedImage, setS
                 </div>
             </div>
 
+            {/* Dynamic Specifications */}
+            <SpecificationsTable specifications={product.specifications} title="Product Details" />
+
             {/* Feature Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t pt-12">
                 <div className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-xl">
@@ -52,7 +63,7 @@ export default function HomeLivingView({ product, allImages, selectedImage, setS
                         <FaRulerCombined size={24} />
                     </div>
                     <h3 className="font-bold text-gray-900 mb-2">Dimensions & Fit</h3>
-                    <p className="text-gray-500 text-sm">Perfectly sized for modern spaces. Check stats for exact measures.</p>
+                    <p className="text-gray-500 text-sm">Perfectly sized for modern spaces. Check specs for exact measures.</p>
                 </div>
                 <div className="flex flex-col items-center text-center p-6 bg-gray-50 rounded-xl">
                     <div className="bg-white p-4 rounded-full shadow-sm mb-4 text-indigo-600">

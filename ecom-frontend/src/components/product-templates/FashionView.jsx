@@ -1,12 +1,11 @@
-import { useState } from "react";
 import ImageGallery from "../product-shared/ImageGallery";
 import RatingsReviews from "../product-shared/RatingsReviews";
 import PriceSection from "../product-shared/PriceSection";
 import AddToCartSection from "../product-shared/AddToCartSection";
+import SpecificationsTable from "../product-shared/SpecificationsTable";
+import VariantSelector from "../product-shared/VariantSelector";
 
 export default function FashionView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
-    const [selectedSize, setSelectedSize] = useState("M");
-    const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -30,28 +29,11 @@ export default function FashionView({ product, allImages, selectedImage, setSele
 
                 <PriceSection price={product.price} specialPrice={product.specialPrice} />
 
-                {/* Size Selector */}
-                <div>
-                    <div className="flex justify-between mb-3">
-                        <span className="font-medium text-gray-900">Select Size</span>
-                        <button className="text-indigo-600 text-sm font-medium hover:underline">Size Guide</button>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                        {sizes.map(size => (
-                            <button
-                                key={size}
-                                onClick={() => setSelectedSize(size)}
-                                className={`w-12 h-12 rounded-full flex items-center justify-center font-medium transition-all
-                            ${selectedSize === size
-                                        ? "bg-gray-900 text-white shadow-lg"
-                                        : "bg-white border text-gray-900 hover:border-gray-900"
-                                    }`}
-                            >
-                                {size}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                {/* Dynamic Size & Color Selector */}
+                <VariantSelector
+                    specifications={product.specifications}
+                    categoryName={product.categoryName}
+                />
 
                 <div className="h-px bg-gray-200" />
 
@@ -67,6 +49,9 @@ export default function FashionView({ product, allImages, selectedImage, setSele
                     handleAddToCart={handleAddToCart}
                     isAvailable={isAvailable}
                 />
+
+                {/* Specifications */}
+                <SpecificationsTable specifications={product.specifications} title="Product Details" />
             </div>
         </div>
     );

@@ -3,8 +3,15 @@ import ImageGallery from "../product-shared/ImageGallery";
 import RatingsReviews from "../product-shared/RatingsReviews";
 import PriceSection from "../product-shared/PriceSection";
 import AddToCartSection from "../product-shared/AddToCartSection";
+import SpecificationsTable from "../product-shared/SpecificationsTable";
+import VariantSelector from "../product-shared/VariantSelector";
 
 export default function ElectronicsView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
+
+    // Extract warranty & replacement from specs, or use defaults
+    const warranty = product.specifications?.warranty || "1 Year";
+    const replacement = product.specifications?.replacement || "7 Days";
+
     return (
         <div>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-16">
@@ -29,17 +36,23 @@ export default function ElectronicsView({ product, allImages, selectedImage, set
 
                     <PriceSection price={product.price} specialPrice={product.specialPrice} />
 
-                    {/* Technical Highlights */}
+                    {/* Technical Highlights — from specs */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col p-3 bg-white border rounded-lg text-center shadow-sm">
                             <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Warranty</span>
-                            <span className="font-semibold text-gray-900">1 Year</span>
+                            <span className="font-semibold text-gray-900">{warranty}</span>
                         </div>
                         <div className="flex flex-col p-3 bg-white border rounded-lg text-center shadow-sm">
                             <span className="text-gray-500 text-xs uppercase font-bold tracking-wider">Replacement</span>
-                            <span className="font-semibold text-gray-900">7 Days</span>
+                            <span className="font-semibold text-gray-900">{replacement}</span>
                         </div>
                     </div>
+
+                    {/* Color Variant Selector */}
+                    <VariantSelector
+                        specifications={product.specifications}
+                        categoryName={product.categoryName}
+                    />
 
                     {/* Main Action */}
                     <AddToCartSection
@@ -59,22 +72,8 @@ export default function ElectronicsView({ product, allImages, selectedImage, set
                 </div>
             </div>
 
-            {/* Specs Table */}
-            <div className="bg-white rounded-xl border p-6 md:p-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Technical Specifications</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
-                    {product.specifications ? (
-                        Object.entries(product.specifications).map(([key, value]) => (
-                            <div key={key} className="flex border-b border-gray-100 py-3">
-                                <span className="text-gray-500 w-1/3 text-sm">{key}</span>
-                                <span className="text-gray-900 font-medium w-2/3">{value}</span>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-400 italic">No specifications listed.</p>
-                    )}
-                </div>
-            </div>
+            {/* Dynamic Specs Table */}
+            <SpecificationsTable specifications={product.specifications} title="Technical Specifications" />
 
             {/* Description */}
             <div className="mt-8">
