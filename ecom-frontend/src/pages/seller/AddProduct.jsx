@@ -6,6 +6,7 @@ import { createProduct, updateProduct } from "../../store/actions/productActions
 import { useAuth } from "../../context/AuthContext";
 import ImageUploader from "../../components/ImageUploader";
 import DynamicSpecForm from "../../components/DynamicSpecForm";
+import VariantManager from "../../components/VariantManager";
 
 export default function AddProduct({ onClose, isEditMode = false, product = null }) {
 
@@ -34,6 +35,9 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
 
     // Specifications from DynamicSpecForm
     const [specifications, setSpecifications] = useState({});
+
+    // Variants from VariantManager
+    const [variants, setVariants] = useState([]);
 
     const specialPrice = price - (price * discount) / 100;
 
@@ -107,8 +111,11 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 return;
             }
             if (!quantity || quantity < 0) {
-                alert("Quantity must be 0 or greater.");
-                return;
+                // Skip quantity check when variants manage stock
+                if (variants.length === 0) {
+                    alert("Quantity must be 0 or greater.");
+                    return;
+                }
             }
             if (!microCategory) {
                 alert("Please select a micro category");
@@ -141,18 +148,26 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
             const primaryImageUrl = primaryImage ? primaryImage.url : productImages[0].url;
             const galleryUrls = productImages.map(img => img.url);
 
+            // Auto-sum variant quantities if variants exist
+            const totalQuantity = variants.length > 0
+                ? variants.reduce((sum, v) => sum + (Number(v.quantity) || 0), 0)
+                : Number(quantity);
+
             const productData = {
                 productName: isEditMode ? product.productName : productName,
                 brand: isEditMode ? product.brand : brand,
                 description,
                 price: Number(price),
                 discount: Number(discount),
-                quantity: Number(quantity),
+                quantity: totalQuantity,
                 specialPrice: Number(specialPrice.toFixed(2)),
                 featured: featured,
                 primaryImage: primaryImageUrl,
                 images: galleryUrls,
                 specifications: specifications,
+                variants: variants.length > 0
+                    ? variants.map(v => ({ ...v, discount: Number(discount) }))
+                    : undefined,
             };
 
             if (isEditMode) {
@@ -282,6 +297,28 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                 </section>
             )}
 
+            {/* Variant Management — after specs */}
+            {(microCategory || (isEditMode && product?.categoryId)) && (
+                <section className="mb-10">
+                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold">
+                            {isEditMode ? "3" : "3"}
+                        </span>
+                        Product Variants
+                    </h2>
+                    <p className="text-sm text-gray-500 mb-4">Add variants if this product comes in different configurations (e.g., different sizes, colors, or storage options). Each variant can have its own price and stock.</p>
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                        <VariantManager
+                            categoryId={microCategory || product?.categoryId}
+                            basePrice={Number(price) || 0}
+                            baseDiscount={Number(discount) || 0}
+                            onVariantsChange={setVariants}
+                            initialVariants={isEditMode ? (product?.variants || []) : []}
+                        />
+                    </div>
+                </section>
+            )}
+
             {/* Show category info in edit mode */}
             {isEditMode && product && (
                 <section className="mb-10">
@@ -302,7 +339,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
             <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <span className={`w-8 h-8 rounded-full ${isEditMode ? "bg-blue-600" : "bg-blue-600"} text-white flex items-center justify-center text-sm font-bold`}>
-                        {isEditMode ? "3" : "3"}
+                        {isEditMode ? "4" : "4"}
                     </span>
                     Product Information
                 </h2>
@@ -364,19 +401,32 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
                         />
                     </div>
 
-                    {/* Quantity */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity (Stock)</label>
-                        <input
-                            type="number"
-                            value={quantity}
-                            onChange={e => setQuantity(e.target.value)}
-                            onWheel={(e) => e.target.blur()}
-                            placeholder="e.g. 50"
-                            min="0"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
+                    {/* Quantity — only show when no variants */}
+                    {variants.length === 0 && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Quantity (Stock)</label>
+                            <input
+                                type="number"
+                                value={quantity}
+                                onChange={e => setQuantity(e.target.value)}
+                                onWheel={(e) => e.target.blur()}
+                                placeholder="e.g. 50"
+                                min="0"
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    )}
+
+                    {/* Show total stock info when variants exist */}
+                    {variants.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">Total Stock</label>
+                            <div className="w-full px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                                {variants.reduce((sum, v) => sum + (Number(v.quantity) || 0), 0)} units
+                                <span className="text-xs text-gray-400 ml-2">(auto-calculated from variants)</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Featured Toggle */}
                     <div className="flex items-center">
@@ -420,7 +470,7 @@ export default function AddProduct({ onClose, isEditMode = false, product = null
             <section className="mb-10">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <span className={`w-8 h-8 rounded-full ${isEditMode ? "bg-blue-600" : "bg-blue-600"} text-white flex items-center justify-center text-sm font-bold`}>
-                        {isEditMode ? "4" : "4"}
+                        {isEditMode ? "5" : "5"}
                     </span>
                     Product Media
                 </h2>

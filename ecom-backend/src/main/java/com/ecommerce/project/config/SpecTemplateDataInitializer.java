@@ -124,9 +124,9 @@ public class SpecTemplateDataInitializer implements CommandLineRunner {
         private void seedSmartphoneSpecs(Category cat) {
                 save(cat, "ram", "RAM", "Performance", "SELECT",
                                 List.of("2GB", "3GB", "4GB", "6GB", "8GB", "12GB", "16GB"),
-                                true, 1, false);
+                                true, 1, true);
                 save(cat, "storage", "Internal Storage", "Performance", "SELECT",
-                                List.of("16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB"), true, 2, false);
+                                List.of("16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB"), true, 2, true);
                 save(cat, "processor", "Processor", "Performance", "TEXT", null, false, 3, false);
                 save(cat, "display_size", "Display Size", "Display", "TEXT", null, false, 4, false);
                 save(cat, "display_type", "Display Type", "Display", "SELECT",

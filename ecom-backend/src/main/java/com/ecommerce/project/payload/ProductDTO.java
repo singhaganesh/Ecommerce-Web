@@ -54,4 +54,7 @@ public class ProductDTO {
 
     // 🔹 Required for category mapping (MICRO category only)
     private Long categoryId;
+
+    // 🔹 Product variants (different configs with own price/stock)
+    private java.util.List<ProductVariantDTO> variants;
 }

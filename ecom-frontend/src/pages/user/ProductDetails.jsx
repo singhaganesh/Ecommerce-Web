@@ -20,6 +20,9 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
+  // 🔹 Track the currently selected variant
+  const [selectedVariant, setSelectedVariant] = useState(null);
+
   useEffect(() => {
     fetchProduct();
     window.scrollTo(0, 0); // Reset scroll on change
@@ -30,6 +33,12 @@ export default function ProductDetails() {
       setLoading(true);
       const response = await api.get(`/public/products/id/${productId}`);
       setProduct(response.data);
+
+      // Auto-select first variant if available
+      if (response.data.variants && response.data.variants.length > 0) {
+        setSelectedVariant(response.data.variants[0]);
+      }
+
       setLoading(false);
     } catch (err) {
       console.error("Error fetching product:", err);
@@ -38,26 +47,42 @@ export default function ProductDetails() {
     }
   };
 
+  // Use the variant's price/stock if one is selected, otherwise product-level
+  const displayPrice = selectedVariant ? selectedVariant.price : product?.price;
+  const displaySpecialPrice = selectedVariant ? selectedVariant.specialPrice : product?.specialPrice;
+  const displayDiscount = selectedVariant ? selectedVariant.discount : product?.discount;
+  const displayQuantity = selectedVariant ? selectedVariant.quantity : product?.quantity;
+  const displayImage = selectedVariant?.primaryImage || null; // variant-specific image (if any)
+
   const handleQuantityChange = (delta) => {
     const newQty = quantity + delta;
-    if (newQty >= 1 && newQty <= (product?.quantity || 1)) {
+    if (newQty >= 1 && newQty <= (displayQuantity || 1)) {
       setQuantity(newQty);
     }
   };
 
   const handleAddToCart = () => {
-    if (product && product.quantity > 0) {
+    if (product && displayQuantity > 0) {
       const cartItem = {
         productId: product.productId,
+        variantId: selectedVariant?.variantId || null,
         productName: product.productName,
-        primaryImage: product.primaryImage,
-        price: product.specialPrice || product.price,
+        variantLabel: selectedVariant
+          ? Object.values(selectedVariant.attributes).join(", ")
+          : null,
+        primaryImage: displayImage || product.primaryImage,
+        price: displaySpecialPrice || displayPrice,
         quantity: quantity,
-        maxQuantity: product.quantity
+        maxQuantity: displayQuantity
       };
       addToCart(cartItem);
       toast.success("Added to cart!");
     }
+  };
+
+  const handleVariantChange = (variant) => {
+    setSelectedVariant(variant);
+    setQuantity(1); // Reset quantity on variant change
   };
 
   if (loading) {
@@ -79,7 +104,7 @@ export default function ProductDetails() {
     );
   }
 
-  const isAvailable = product.quantity > 0;
+  const isAvailable = displayQuantity > 0;
 
   // 🔹 Deduplicate Images
   const rawImages = product.primaryImage
@@ -88,28 +113,51 @@ export default function ProductDetails() {
 
   const allImages = [...new Set(rawImages)];
 
+  // Build the props object that all templates receive
+  const templateProps = {
+    product: {
+      ...product,
+      // Override with variant values so templates automatically show the right price/stock
+      price: displayPrice,
+      specialPrice: displaySpecialPrice,
+      discount: displayDiscount,
+      quantity: displayQuantity,
+    },
+    allImages,
+    selectedImage,
+    setSelectedImage,
+    handleQuantityChange,
+    quantity,
+    handleAddToCart,
+    isAvailable,
+    // Variant-specific props
+    variants: product.variants || [],
+    selectedVariant,
+    onVariantChange: handleVariantChange,
+  };
+
   // 🔹 Select Template based on key words in Category Type
   const renderTemplate = () => {
     const category = (product.categoryType || product.categoryName || "").toLowerCase();
 
     // Flexible matching for Fashion
     if (["fashion", "clothing", "shirt", "pant", "dress", "shoe", "wear", "jean"].some(k => category.includes(k))) {
-      return <FashionView {...{ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }} />;
+      return <FashionView {...templateProps} />;
     }
 
     // Flexible matching for Home & Living
     else if (["home", "living", "furniture", "decor", "kitchen", "bed", "chair", "table"].some(k => category.includes(k))) {
-      return <HomeLivingView {...{ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }} />;
+      return <HomeLivingView {...templateProps} />;
     }
 
     // Flexible matching for Sports
     else if (["sport", "fitness", "gym", "yoga", "bike", "cycle", "run"].some(k => category.includes(k))) {
-      return <SportsFitnessView {...{ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }} />;
+      return <SportsFitnessView {...templateProps} />;
     }
 
     // Default to Electronics (or specific check)
     else {
-      return <ElectronicsView {...{ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }} />;
+      return <ElectronicsView {...templateProps} />;
     }
   };
 

@@ -5,6 +5,7 @@ import com.ecommerce.project.exception.ResourceNotFoundException;
 import com.ecommerce.project.model.*;
 import com.ecommerce.project.payload.CartDTO;
 import com.ecommerce.project.payload.ProductDTO;
+import com.ecommerce.project.payload.ProductVariantDTO;
 import com.ecommerce.project.payload.ProductResponse;
 import com.ecommerce.project.repository.*;
 import com.ecommerce.project.util.ImageUtils;
@@ -39,6 +40,7 @@ public class ProductServiceImpl implements ProductService {
         private final UserRepository userRepository;
         private final SkuGeneratorService skuGeneratorService;
         private final ProductImageRepository productImageRepository;
+        private final ProductVariantRepository productVariantRepository;
 
         @Value("${project.image}")
         private String path;
@@ -51,7 +53,8 @@ public class ProductServiceImpl implements ProductService {
                         FileService fileService,
                         ImageUtils imageUtils, UserRepository userRepository,
                         SkuGeneratorService skuGeneratorService,
-                        ProductImageRepository productImageRepository) {
+                        ProductImageRepository productImageRepository,
+                        ProductVariantRepository productVariantRepository) {
                 this.cartService = cartService;
                 this.cartRepository = cartRepository;
                 this.productRepository = productRepository;
@@ -62,6 +65,7 @@ public class ProductServiceImpl implements ProductService {
                 this.userRepository = userRepository;
                 this.skuGeneratorService = skuGeneratorService;
                 this.productImageRepository = productImageRepository;
+                this.productVariantRepository = productVariantRepository;
         }
 
         @Override
@@ -138,6 +142,11 @@ public class ProductServiceImpl implements ProductService {
 
                 System.out.println("Saved product with " + finalSavedProduct.getImages().size() + " images");
 
+                // Save variants if provided
+                if (productDTO.getVariants() != null && !productDTO.getVariants().isEmpty()) {
+                        saveVariants(finalSavedProduct, productDTO.getVariants());
+                }
+
                 // Map to DTO
                 ProductDTO response = modelMapper.map(finalSavedProduct, ProductDTO.class);
                 response.setCategoryType(category.resolveCategoryType());
@@ -153,6 +162,7 @@ public class ProductServiceImpl implements ProductService {
                                                 .findFirst()
                                                 .orElse(null));
 
+                mapVariantsToDTO(finalSavedProduct, response);
                 return response;
         }
 
@@ -206,6 +216,7 @@ public class ProductServiceImpl implements ProductService {
                                                 dto.setPrimaryImage(null);
                                         }
 
+                                        mapVariantsToDTO(product, dto);
                                         return dto;
                                 })
                                 .toList();
@@ -573,6 +584,8 @@ public class ProductServiceImpl implements ProductService {
                                 .orElse(null);
                 response.setPrimaryImage(primaryImage);
 
+                // Map variants
+                mapVariantsToDTO(updatedProduct, response);
                 return response;
         }
 
@@ -622,7 +635,60 @@ public class ProductServiceImpl implements ProductService {
                         dto.setPrimaryImage(primaryImg.getImageUrl());
                 }
 
+                // Map variants
+                mapVariantsToDTO(product, dto);
                 return dto;
+        }
+
+        // ─── VARIANT HELPERS ──────────────────────────────────────
+
+        /**
+         * Maps product variants to DTOs and sets them on the ProductDTO.
+         */
+        private void mapVariantsToDTO(Product product, ProductDTO dto) {
+                List<ProductVariant> variants = product.getVariants();
+                if (variants != null && !variants.isEmpty()) {
+                        List<ProductVariantDTO> variantDTOs = variants.stream()
+                                        .map(v -> {
+                                                ProductVariantDTO vDto = new ProductVariantDTO();
+                                                vDto.setVariantId(v.getVariantId());
+                                                vDto.setAttributes(v.getAttributes());
+                                                vDto.setPrice(v.getPrice());
+                                                vDto.setDiscount(v.getDiscount());
+                                                vDto.setSpecialPrice(v.getSpecialPrice());
+                                                vDto.setQuantity(v.getQuantity());
+                                                vDto.setSku(v.getSku());
+                                                vDto.setPrimaryImage(v.getPrimaryImage());
+                                                return vDto;
+                                        })
+                                        .toList();
+                        dto.setVariants(variantDTOs);
+                } else {
+                        dto.setVariants(List.of());
+                }
+        }
+
+        /**
+         * Saves variant entities for a product from DTOs.
+         */
+        private void saveVariants(Product product, List<ProductVariantDTO> variantDTOs) {
+                for (ProductVariantDTO vDto : variantDTOs) {
+                        ProductVariant variant = new ProductVariant();
+                        variant.setProduct(product);
+                        variant.setAttributes(vDto.getAttributes());
+                        variant.setPrice(vDto.getPrice());
+                        variant.setDiscount(vDto.getDiscount());
+                        double sp = vDto.getPrice() - (vDto.getPrice() * vDto.getDiscount() / 100.0);
+                        variant.setSpecialPrice(sp);
+                        variant.setQuantity(vDto.getQuantity());
+                        variant.setSku(vDto.getSku() != null ? vDto.getSku()
+                                        : skuGeneratorService.generateUniqueSku(
+                                                        product.getCategory().getCategoryName(),
+                                                        product.getBrand(),
+                                                        product.getProductName() + "-V"));
+                        variant.setPrimaryImage(vDto.getPrimaryImage());
+                        productVariantRepository.save(variant);
+                }
         }
 
 }

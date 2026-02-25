@@ -6,7 +6,7 @@ import AddToCartSection from "../product-shared/AddToCartSection";
 import SpecificationsTable from "../product-shared/SpecificationsTable";
 import VariantSelector from "../product-shared/VariantSelector";
 
-export default function HomeLivingView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
+export default function HomeLivingView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable, variants, selectedVariant, onVariantChange }) {
     return (
         <div className="space-y-12">
             {/* Wide Hero Layout */}
@@ -39,8 +39,10 @@ export default function HomeLivingView({ product, allImages, selectedImage, setS
 
                     {/* Color Variant if available */}
                     <VariantSelector
+                        variants={variants}
                         specifications={product.specifications}
                         categoryName={product.categoryName}
+                        onVariantChange={onVariantChange}
                     />
 
                     <AddToCartSection

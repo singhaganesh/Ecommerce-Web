@@ -31,48 +31,61 @@ export const CartProvider = ({ children }) => {
     setItemCount(count);
   };
 
+  /**
+   * Unique cart key: productId + variantId.
+   * Same product with different variants → separate cart items.
+   * Products without variants → variantId is null.
+   */
+  const getCartKey = (item) => `${item.productId}_${item.variantId || "base"}`;
+
   const addToCart = (product, quantity = 1) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.productId === product.productId);
-      
+      const cartKey = getCartKey(product);
+      const existingItem = prevCart.find((item) => getCartKey(item) === cartKey);
+
       if (existingItem) {
         const newQuantity = existingItem.quantity + quantity;
-        if (newQuantity > product.quantity) {
-          toast.error(`Only ${product.quantity} items available in stock`);
+        const maxQty = product.maxQuantity || product.quantity;
+        if (newQuantity > maxQty) {
+          toast.error(`Only ${maxQty} items available in stock`);
           return prevCart;
         }
         return prevCart.map((item) =>
-          item.productId === product.productId
+          getCartKey(item) === cartKey
             ? { ...item, quantity: newQuantity }
             : item
         );
       }
-      
-      if (quantity > product.quantity) {
-        toast.error(`Only ${product.quantity} items available in stock`);
+
+      const maxQty = product.maxQuantity || product.quantity;
+      if (quantity > maxQty) {
+        toast.error(`Only ${maxQty} items available in stock`);
         return prevCart;
       }
-      
+
       return [...prevCart, { ...product, quantity }];
     });
-    
-    toast.success(`${quantity} x ${product.productName} added to cart!`);
+
+    const label = product.variantLabel ? ` (${product.variantLabel})` : "";
+    toast.success(`${quantity} x ${product.productName}${label} added to cart!`);
   };
 
-  const removeFromCart = (productId) => {
-    setCart((prevCart) => prevCart.filter((item) => item.productId !== productId));
+  const removeFromCart = (productId, variantId = null) => {
+    const key = `${productId}_${variantId || "base"}`;
+    setCart((prevCart) => prevCart.filter((item) => getCartKey(item) !== key));
     toast.info("Item removed from cart");
   };
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = (productId, quantity, variantId = null) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
+      removeFromCart(productId, variantId);
       return;
     }
-    
+
+    const key = `${productId}_${variantId || "base"}`;
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.productId === productId ? { ...item, quantity } : item
+        getCartKey(item) === key ? { ...item, quantity } : item
       )
     );
   };

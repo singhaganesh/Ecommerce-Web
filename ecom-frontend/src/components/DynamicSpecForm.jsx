@@ -32,7 +32,9 @@ export default function DynamicSpecForm({ categoryId, onSpecsChange, initialSpec
             setError(null);
             try {
                 const response = await api.get(`/public/categories/${categoryId}/spec-template`);
-                setTemplate(response.data);
+                // Filter out variant fields — those are handled by VariantManager
+                const nonVariantFields = response.data.filter(f => !f.isVariant);
+                setTemplate(nonVariantFields);
 
                 // Use the ref to get latest initialSpecs (avoids stale closure)
                 const currentInitialSpecs = initialSpecsRef.current || {};

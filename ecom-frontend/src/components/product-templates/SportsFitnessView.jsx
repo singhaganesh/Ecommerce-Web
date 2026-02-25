@@ -6,7 +6,7 @@ import AddToCartSection from "../product-shared/AddToCartSection";
 import SpecificationsTable from "../product-shared/SpecificationsTable";
 import VariantSelector from "../product-shared/VariantSelector";
 
-export default function SportsFitnessView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
+export default function SportsFitnessView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable, variants, selectedVariant, onVariantChange }) {
     return (
         <div className="bg-white rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -39,8 +39,10 @@ export default function SportsFitnessView({ product, allImages, selectedImage, s
 
                     {/* Dynamic Size/Color Selector */}
                     <VariantSelector
+                        variants={variants}
                         specifications={product.specifications}
                         categoryName={product.categoryName}
+                        onVariantChange={onVariantChange}
                     />
 
                     <div className="grid grid-cols-2 gap-4 mb-8 mt-6">

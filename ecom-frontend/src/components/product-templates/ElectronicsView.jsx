@@ -6,7 +6,7 @@ import AddToCartSection from "../product-shared/AddToCartSection";
 import SpecificationsTable from "../product-shared/SpecificationsTable";
 import VariantSelector from "../product-shared/VariantSelector";
 
-export default function ElectronicsView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable }) {
+export default function ElectronicsView({ product, allImages, selectedImage, setSelectedImage, handleQuantityChange, quantity, handleAddToCart, isAvailable, variants, selectedVariant, onVariantChange }) {
 
     // Extract warranty & replacement from specs, or use defaults
     const warranty = product.specifications?.warranty || "1 Year";
@@ -48,10 +48,12 @@ export default function ElectronicsView({ product, allImages, selectedImage, set
                         </div>
                     </div>
 
-                    {/* Color Variant Selector */}
+                    {/* Variant Selector */}
                     <VariantSelector
+                        variants={variants}
                         specifications={product.specifications}
                         categoryName={product.categoryName}
+                        onVariantChange={onVariantChange}
                     />
 
                     {/* Main Action */}

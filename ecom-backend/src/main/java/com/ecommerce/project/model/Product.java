@@ -13,7 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 @Table(name = "products")
-@ToString(exclude = { "images", "category", "user", "cartItems" })
+@ToString(exclude = { "images", "category", "user", "cartItems", "variants" })
 public class Product {
 
     @Id
@@ -64,6 +64,10 @@ public class Product {
     @JoinColumn(name = "seller_id")
     @ManyToOne(fetch = FetchType.LAZY)
     private User user;
+
+    // 🔹 Product Variants (e.g., 8GB+128GB Black, 12GB+256GB Blue)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ProductVariant> variants;
 
     // 🔹 Cart Mapping
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)

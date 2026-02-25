@@ -27,6 +27,11 @@ public class CartItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @ToString.Exclude
+    @ManyToOne
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant; // nullable — products without variants have this as null
+
     private Integer quantity;
     private double discount;
     private double productPrice;
