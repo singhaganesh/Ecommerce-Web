@@ -127,14 +127,48 @@ Ecommerce-Web/
 
 ```mermaid
 graph TD
-    User((User)) -->|Question| Controller[ChatController]
-    Controller -->|Resolve Intent| Intent[QueryIntentResolver]
-    Intent -->|Match Branch| Index[BranchAliasIndex]
-    Intent -->|Fetch Data| TB[ThingsBoard API]
-    TB -->|Raw JSON| Filter[ContextFilterUtil]
-    Filter -->|Truth Note| Service[ChatService]
-    Service -->|CAG Prompt| OpenAI[OpenAI API]
-    OpenAI -->|Formatted Answer| User
+    subgraph Clients
+        U[User / Customer]
+        S[Seller]
+        A[Admin]
+    end
+
+    subgraph "Frontend (React + Vite)"
+        UI[User Interface / React Router]
+        State[Redux Toolkit State]
+        Axios[Axios HTTP Client]
+        
+        UI <--> State
+        UI <--> Axios
+    end
+
+    subgraph "Backend (Spring Boot)"
+        Auth[Spring Security + JWT Filter]
+        Controllers[REST Controllers]
+        Services[Business Logic Layer]
+        Repositories[Spring Data JPA]
+        
+        Auth -->|Validated Requests| Controllers
+        Controllers -->|DTOs| Services
+        Services -->|Entities| Repositories
+    end
+
+    subgraph "Storage & Services"
+        DB[(PostgreSQL / MySQL)]
+        Cloud[Cloudinary / File Storage]
+    end
+
+    %% Client to Frontend
+    U -->|Browses / Shops| UI
+    S -->|Manages Inventory| UI
+    A -->|System Admin| UI
+
+    %% Frontend to Backend
+    Axios <-->|REST API Calls w/ Bearer Token| Auth
+
+    %% Backend to Storage
+    Repositories <-->|SQL Queries| DB
+    Services -->|Uploads Media| Cloud
 ```
 ---
 
