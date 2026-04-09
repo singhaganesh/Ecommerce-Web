@@ -123,6 +123,20 @@ Ecommerce-Web/
 ```
 
 ---
+## System Architecture
+
+```mermaid
+graph TD
+    User((User)) -->|Question| Controller[ChatController]
+    Controller -->|Resolve Intent| Intent[QueryIntentResolver]
+    Intent -->|Match Branch| Index[BranchAliasIndex]
+    Intent -->|Fetch Data| TB[ThingsBoard API]
+    TB -->|Raw JSON| Filter[ContextFilterUtil]
+    Filter -->|Truth Note| Service[ChatService]
+    Service -->|CAG Prompt| OpenAI[OpenAI API]
+    OpenAI -->|Formatted Answer| User
+```
+---
 
 ## 🚀 Setup & Installation
 
