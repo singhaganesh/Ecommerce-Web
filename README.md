@@ -49,10 +49,10 @@ A full-stack e-commerce application built with Spring Boot (Backend) and React (
 ### Backend
 | Technology | Purpose |
 |------------|---------|
-| Spring Boot 3.4.3 | Application framework |
+| **Spring Boot** | Application framework |
 | Spring Data JPA | ORM and data access |
-| Spring Security | Authentication & authorization |
-| PostgreSQL / MySQL | Database |
+| **Spring Security** | Authentication & authorization |
+| **PostgreSQL**  | Database |
 | JWT (JSON Web Tokens) | Stateless authentication |
 | Lombok | Boilerplate code reduction |
 | ModelMapper | Object mapping |
@@ -61,9 +61,9 @@ A full-stack e-commerce application built with Spring Boot (Backend) and React (
 ### Frontend
 | Technology | Purpose |
 |------------|---------|
-| React 19 | UI library |
+| **React 19** | UI library |
 | Vite | Build tool |
-| Redux Toolkit | State management |
+| **Redux Toolkit** | State management |
 | React Router DOM | Client-side routing |
 | Tailwind CSS 4 | Utility-first styling |
 | Material UI (MUI) | Component library |
