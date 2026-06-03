@@ -49,10 +49,10 @@ A full-stack e-commerce application built with Spring Boot (Backend) and React (
 ### Backend
 | Technology | Purpose |
 |------------|---------|
-| Spring Boot 3.4.3 | Application framework |
+| **Spring Boot** | Application framework |
 | Spring Data JPA | ORM and data access |
-| Spring Security | Authentication & authorization |
-| PostgreSQL / MySQL | Database |
+| **Spring Security** | Authentication & authorization |
+| **PostgreSQL**  | Database |
 | JWT (JSON Web Tokens) | Stateless authentication |
 | Lombok | Boilerplate code reduction |
 | ModelMapper | Object mapping |
@@ -61,9 +61,9 @@ A full-stack e-commerce application built with Spring Boot (Backend) and React (
 ### Frontend
 | Technology | Purpose |
 |------------|---------|
-| React 19 | UI library |
+| **React 19** | UI library |
 | Vite | Build tool |
-| Redux Toolkit | State management |
+| **Redux Toolkit** | State management |
 | React Router DOM | Client-side routing |
 | Tailwind CSS 4 | Utility-first styling |
 | Material UI (MUI) | Component library |
@@ -122,6 +122,54 @@ Ecommerce-Web/
 └── images/                      # Project documentation images
 ```
 
+---
+## System Architecture
+
+```mermaid
+graph TD
+    subgraph Clients
+        U[User / Customer]
+        S[Seller]
+        A[Admin]
+    end
+
+    subgraph "Frontend (React + Vite)"
+        UI[User Interface / React Router]
+        State[Redux Toolkit State]
+        Axios[Axios HTTP Client]
+        
+        UI <--> State
+        UI <--> Axios
+    end
+
+    subgraph "Backend (Spring Boot)"
+        Auth[Spring Security + JWT Filter]
+        Controllers[REST Controllers]
+        Services[Business Logic Layer]
+        Repositories[Spring Data JPA]
+        
+        Auth -->|Validated Requests| Controllers
+        Controllers -->|DTOs| Services
+        Services -->|Entities| Repositories
+    end
+
+    subgraph "Storage & Services"
+        DB[(PostgreSQL / MySQL)]
+        Cloud[Cloudinary / File Storage]
+    end
+
+    %% Client to Frontend
+    U -->|Browses / Shops| UI
+    S -->|Manages Inventory| UI
+    A -->|System Admin| UI
+
+    %% Frontend to Backend
+    Axios <-->|REST API Calls w/ Bearer Token| Auth
+
+    %% Backend to Storage
+    Repositories <-->|SQL Queries| DB
+    Services -->|Uploads Media| Cloud
+```
 ---
 
 ## 🚀 Setup & Installation
